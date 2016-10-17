@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pripomienkovač</string>
+    <string name="action_settings">Nastavenia</string>
+    <string name="contacts">KONTAKTY</string>
+    <string name="reminders">PRIPOMIENKY</string>
+    <string name="years">rokov</string>
+    <string name="notes">POZNÁMKY</string>
+</resources>

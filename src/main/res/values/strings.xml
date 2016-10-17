@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Reminder</string>
+    <string name="action_settings">Settings</string>
+    <string name="years">years</string>
+    <string name="contacts">CONTACTS</string>
+    <string name="reminders">REMINDERS</string>
+    <string name="notes">NOTES</string>
+</resources>

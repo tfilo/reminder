@@ -1,34 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:divider="@drawable/separator"
+    android:orientation="vertical"
     android:showDividers="end">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:orientation="horizontal">
+
         <ImageView
-            android:padding="10dp"
             android:id="@+id/contact_icon"
+            android:layout_width="64dp"
             android:layout_height="64dp"
-            android:layout_width="64dp"/>
+            android:layout_gravity="center_vertical"
+            android:padding="10dp" />
+
         <TextView
-            android:padding="10dp"
-            android:textStyle="bold"
-            android:id="@+id/contact_name"
-            android:layout_height="wrap_content"
+            android:id="@+id/basic_name"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:layout_weight="0.6"
-            android:gravity="left"/>
-        <TextView
+            android:gravity="left"
             android:padding="10dp"
-            android:textStyle="bold"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/contact_birthday"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:layout_weight="0.4"
-            android:gravity="right"/>
+            android:gravity="right"
+            android:padding="10dp"
+            android:textStyle="bold" />
+
+        <Switch
+            android:id="@+id/alarm_enabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:padding="5dp" />
     </LinearLayout>
 </LinearLayout>

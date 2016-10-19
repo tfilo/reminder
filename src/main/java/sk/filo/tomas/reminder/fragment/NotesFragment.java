@@ -1,4 +1,4 @@
-package sk.filo.tomas.reminder;
+package sk.filo.tomas.reminder.fragment;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -9,10 +9,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+
+import sk.filo.tomas.reminder.R;
+import sk.filo.tomas.reminder.adapter.BasicItemAdapter;
+import sk.filo.tomas.reminder.item.BasicItem;
+import sk.filo.tomas.reminder.item.NoteItem;
+import sk.filo.tomas.reminder.listener.CustomItemClickListener;
 
 public class NotesFragment extends Fragment {
 
@@ -33,15 +39,21 @@ public class NotesFragment extends Fragment {
         mLayoutManager = new LinearLayoutManager(getActivity());
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        List<NoteItem> mDataset = new ArrayList<NoteItem>();
+        final List<BasicItem> mDataset = new ArrayList<BasicItem>();
 
-        Log.d(TAG, "Start: " + System.currentTimeMillis() + "ms");
-        for (int i=0; i<20; i++) {
-            mDataset.add(new NoteItem("Name " + i, "Popis " + i));
+        for (int i = 0; i < 20; i++) {
+            mDataset.add(new NoteItem(null, "Name " + i, "Popis " + i));
         }
-        Log.d(TAG, "End: " + System.currentTimeMillis() + "ms");
 
-        mAdapter = new NoteItemAdapter(mDataset, getContext());
+        CustomItemClickListener listener = new CustomItemClickListener() {
+
+            @Override
+            public void onItemClick(View v, int position) {
+                Toast.makeText(getContext(), mDataset.get(position).toString(), Toast.LENGTH_LONG).show();
+            }
+        };
+
+        mAdapter = new BasicItemAdapter(mDataset, getContext(), listener);
         mRecyclerView.setAdapter(mAdapter);
         return w;
     }
@@ -49,6 +61,12 @@ public class NotesFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume");
     }
 
 }

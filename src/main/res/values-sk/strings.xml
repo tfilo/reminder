@@ -6,4 +6,8 @@
     <string name="reminders">PRIPOMIENKY</string>
     <string name="years">rokov</string>
     <string name="notes">POZNÁMKY</string>
+    <string name="insert_time">Zadajte čas</string>
+    <string name="insert_date">Zadajte dátum</string>
+    <string name="insert_name">Zadajte názov</string>
+    <string name="insert_description">Zadajte popis</string>
 </resources>

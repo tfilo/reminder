@@ -1,86 +1,151 @@
 package sk.filo.tomas.reminder;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.design.widget.TabLayout;
+import android.preference.PreferenceManager;
+import android.provider.ContactsContract;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
+import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import sk.filo.tomas.reminder.adapter.ViewPagerAdapter;
+import sk.filo.tomas.reminder.dao.DatabaseHelper;
+import sk.filo.tomas.reminder.fragment.ContactsFragment;
+import sk.filo.tomas.reminder.fragment.MainFragment;
+import sk.filo.tomas.reminder.item.ContactItem;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TabLayout tabLayout;
-    private ViewPager viewPager;
+    public static final SimpleDateFormat[] birthdayFormats = {
+            new SimpleDateFormat("yyyy-MM-dd"),
+            new SimpleDateFormat("yyyy.MM.dd"),
+            new SimpleDateFormat("yy-MM-dd"),
+            new SimpleDateFormat("yy.MM.dd"),
+            new SimpleDateFormat("yy/MM/dd"),
+            new SimpleDateFormat("MMM dd, yyyy")
+    };
+
+    private static final String TAG = "MainActivity";
+
+    private final static int REQUEST_READ_CONTACTS = 1;
+    private final static String USE_CONTACTS = "use_contacts";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate()");
         setContentView(R.layout.activity_main);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        viewPager = (ViewPager) findViewById(R.id.viewpager);
-        setupViewPager(viewPager);
 
-        tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(viewPager);
+        if (savedInstanceState==null) {
+            // UPDATE CONTACTS IN DB, synchronous because we don't want to display not valid contacts
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        /*
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+            int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS);
+            if (sharedPreferences.getBoolean(USE_CONTACTS, true)) {
+                if (PackageManager.PERMISSION_GRANTED != permissionCheck) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.READ_CONTACTS},
+                            REQUEST_READ_CONTACTS);
+                } else {
+                    updateContactDatabase();
+                }
             }
-        });
-        */
+
+            Fragment fg = getSupportFragmentManager().findFragmentByTag(MainFragment.class.getName());
+            if (fg == null) {
+                fg = new MainFragment();
+            }
+            getSupportFragmentManager().beginTransaction().replace(R.id.main_layout, fg, MainFragment.class.getName()).commit();
+        }
     }
 
-    private void setupViewPager(ViewPager viewPager) {
-        ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFragment(new RemindersFragment(), getString(R.string.reminders));
-        adapter.addFragment(new NotesFragment(), getString(R.string.notes));
-        adapter.addFragment(new ContactsFragment(), getString(R.string.contacts));
-        viewPager.setAdapter(adapter);
+    private void updateContactDatabase() {
+        Cursor contact = getContactsBirthdays();
+        Map<Long, ContactItem> contacts = new HashMap<Long, ContactItem>();
+        if (contact.moveToFirst()) {
+            do {
+                String name = contact.getString(contact.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                Long contactId = contact.getLong(contact.getColumnIndex(ContactsContract.Contacts.NAME_RAW_CONTACT_ID));
+                String icon = contact.getString(contact.getColumnIndex(ContactsContract.Data.PHOTO_THUMBNAIL_URI));
+                String bDay = contact.getString(contact.getColumnIndex(ContactsContract.CommonDataKinds.Event.START_DATE));
+                Date birthday = null;
+                for (SimpleDateFormat f : birthdayFormats) {
+                    try {
+                        birthday = f.parse(bDay);
+                        break;
+                    } catch (ParseException e) {
+                    }
+                }
+                ContactItem contactItem = new ContactItem(contactId, name, icon, birthday, null);
+                contacts.put(contactItem.id, contactItem);
+            } while (contact.moveToNext());
+        }
+
+        DatabaseHelper dbH = new DatabaseHelper(getApplicationContext());
+        dbH.replaceUpdateContactsByMap(contacts);
     }
 
-    class ViewPagerAdapter extends FragmentPagerAdapter {
-        private final List<Fragment> mFragmentList = new ArrayList<>();
-        private final List<String> mFragmentTitleList = new ArrayList<>();
-
-        public ViewPagerAdapter(FragmentManager manager) {
-            super(manager);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            return mFragmentList.get(position);
-        }
-
-        @Override
-        public int getCount() {
-            return mFragmentList.size();
-        }
-
-        public void addFragment(Fragment fragment, String title) {
-            mFragmentList.add(fragment);
-            mFragmentTitleList.add(title);
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return mFragmentTitleList.get(position);
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_READ_CONTACTS: {
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                SharedPreferences.Editor edit = sharedPreferences.edit();
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    updateContactDatabase();
+                    edit.putBoolean(USE_CONTACTS, true);
+                } else {
+                    Log.d(TAG, "PERMISSION DENIED");
+                    edit.putBoolean(USE_CONTACTS, false);
+                    Fragment fg = getSupportFragmentManager().findFragmentByTag(MainFragment.class.getName());
+                    if (fg != null) {
+                        ViewPager mViewPager = (ViewPager) fg.getView().findViewById(R.id.viewpager);
+                        if (mViewPager != null) {
+                            Log.d(TAG, "Search for fragment");
+                            ViewPagerAdapter adapter = (ViewPagerAdapter) mViewPager.getAdapter();
+                            Fragment selected = null;
+                            for (Fragment f : adapter.mFragmentList) {
+                                Log.d(TAG, f.toString());
+                                if (f instanceof ContactsFragment) {
+                                    selected = f;
+                                    Log.d(TAG, "Selected " + selected);
+                                }
+                            }
+                            if (selected != null) {
+                                adapter.mFragmentList.remove(selected);
+                                adapter.notifyDataSetChanged();
+                            }
+                        }
+                    }
+                }
+                edit.commit();
+                return;
+            }
         }
     }
 
@@ -99,5 +164,25 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private Cursor getContactsBirthdays() {
+        Uri uri = ContactsContract.Data.CONTENT_URI;
+
+        String[] projection = new String[]{
+                ContactsContract.Contacts.DISPLAY_NAME,
+                ContactsContract.Contacts.NAME_RAW_CONTACT_ID,
+                ContactsContract.Data.PHOTO_THUMBNAIL_URI,
+                ContactsContract.CommonDataKinds.Event.START_DATE
+        };
+
+        String where = ContactsContract.Data.MIMETYPE + "= ? AND " +
+                ContactsContract.CommonDataKinds.Event.TYPE + "=" +
+                ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY;
+        String[] selectionArgs = new String[]{
+                ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE
+        };
+        String sortOrder = null;
+        return getContentResolver().query(uri, projection, where, selectionArgs, sortOrder);
     }
 }

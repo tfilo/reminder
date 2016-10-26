@@ -1,7 +1,6 @@
 package sk.filo.tomas.reminder;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -15,11 +14,9 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -59,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
 
-        if (savedInstanceState==null) {
+        if (savedInstanceState == null) {
             // UPDATE CONTACTS IN DB, synchronous because we don't want to display not valid contacts
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 

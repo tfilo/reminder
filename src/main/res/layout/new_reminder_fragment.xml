@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -13,16 +14,16 @@
             android:id="@+id/new_time"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/insert_time"
             android:focusable="false"
+            android:hint="@string/insert_time"
             android:inputType="text" />
 
         <EditText
             android:id="@+id/new_date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/insert_date"
             android:focusable="false"
+            android:hint="@string/insert_date"
             android:inputType="text" />
 
         <EditText

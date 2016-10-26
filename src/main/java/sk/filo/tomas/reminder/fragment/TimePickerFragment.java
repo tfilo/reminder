@@ -9,7 +9,6 @@ import android.widget.EditText;
 import android.widget.TimePicker;
 
 import java.util.Calendar;
-import java.util.Date;
 
 import sk.filo.tomas.reminder.R;
 

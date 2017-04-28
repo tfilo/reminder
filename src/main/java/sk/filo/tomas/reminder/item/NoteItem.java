@@ -8,7 +8,7 @@ public class NoteItem extends BasicItem {
     public String description;
 
     public NoteItem(Long id, String name, String description) {
-        super(id, name);
+        super(id, null, name);
         this.description = description;
     }
 

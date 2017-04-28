@@ -9,4 +9,9 @@
     <string name="insert_date">Insert date</string>
     <string name="insert_name">Insert name</string>
     <string name="insert_description">Insert description</string>
+    <string name="enabled_alarm">Enable alarm</string>
+    <string name="birthday">Birthday</string>
+    <string name="reminder">Reminder</string>
+    <string name="has_birthday">has birthday</string>
+    <string name="done">Done</string>
 </resources>

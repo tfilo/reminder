@@ -10,4 +10,9 @@
     <string name="insert_date">Zadajte dátum</string>
     <string name="insert_name">Zadajte názov</string>
     <string name="insert_description">Zadajte popis</string>
+    <string name="enabled_alarm">Zapnúť alarm</string>
+    <string name="birthday">Narodeniny</string>
+    <string name="reminder">Pripomienka</string>
+    <string name="has_birthday">má narodeniny</string>
+    <string name="done">Hotovo</string>
 </resources>

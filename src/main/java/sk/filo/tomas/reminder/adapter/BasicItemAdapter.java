@@ -13,6 +13,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import java.text.DateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -54,8 +55,6 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
 
         switch (viewType) {
             case 0:
-                // TODO //mView = LayoutInflater.from(parent.getContext()).inflate(R.layout.basic_item, parent, false);
-                mViewHolder = new BasicHolder(mView);
                 break;
             case 1:
                 mView = LayoutInflater.from(parent.getContext()).inflate(R.layout.reminder_item, parent, false);
@@ -152,6 +151,19 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
                 sb.append(mCtx.getResources().getString(R.string.years));
                 sb.append(")");
                 birthday.setText(sb.toString());
+
+                Calendar birthdayCal = Calendar.getInstance();
+                birthdayCal.setTime(contactItem.birthday);
+
+                Calendar actualDay = Calendar.getInstance();
+
+                if (birthdayCal.get(Calendar.DAY_OF_YEAR) < actualDay.get(Calendar.DAY_OF_YEAR)) {
+                    name.setEnabled(false);
+                    birthday.setEnabled(false);
+                } else {
+                    name.setEnabled(true);
+                    birthday.setEnabled(true);
+                }
             } else {
                 birthday.setText("");
             }
@@ -170,13 +182,13 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
                     Switch sw = (Switch) v;
                     ContactItem ci = (ContactItem) sw.getTag();
                     if (sw.isChecked()) {
-                        Log.d(TAG, "JE zaciarknute " + ci.name);
-                        dbH.enableDisableContactAlarm(ci.id, sw.isChecked());
+                        dbH.enableDisableAlarm(ci.alarm_fk, sw.isChecked());
                         ci.alarmEnabled = sw.isChecked();
+                        Log.d(TAG,"Checked contact " + ci.name);
                     } else {
-                        Log.d(TAG, "NIE JE zaciarknute " + ci.name);
-                        dbH.enableDisableContactAlarm(ci.id, sw.isChecked());
+                        dbH.enableDisableAlarm(ci.alarm_fk, sw.isChecked());
                         ci.alarmEnabled = sw.isChecked();
+                        Log.d(TAG,"Checked contact " + ci.name);
                     }
                 }
             });
@@ -216,18 +228,24 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
             String date = DateFormat.getDateTimeInstance().format(reminderItem.notificationTime);
             notificationTime.setText(date);
             alarmEnabled.setChecked(reminderItem.alarmEnabled);
-            alarmEnabled.setTag(reminderItem.id);
-            alarmEnabled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            alarmEnabled.setEnabled(reminderItem.alarmEnabled);
+            description.setEnabled(reminderItem.alarmEnabled);
+            notificationTime.setEnabled(reminderItem.alarmEnabled);
+            alarmEnabled.setTag(reminderItem);
+            alarmEnabled.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    Long id = (Long) buttonView.getTag();
+                public void onClick(View v) {
                     DatabaseHelper dbH = new DatabaseHelper(mCtx);
-                    if (isChecked) {
-                        Log.d(TAG, "JE zaciarknute");
-                        //dbH.enableDisableReminderAlarm(id, isChecked);
+                    Switch sw = (Switch) v;
+                    ReminderItem ri = (ReminderItem) sw.getTag();
+                    if (sw.isChecked()) {
+                        dbH.enableDisableAlarm(ri.alarm_fk, sw.isChecked());
+                        ri.alarmEnabled = sw.isChecked();
+                        Log.d(TAG,"Checked reminder " + ri.name);
                     } else {
-                        Log.d(TAG, "NIE JE zaciarknute");
-                        //dbH.enableDisableReminderAlarm(id, isChecked);
+                        dbH.enableDisableAlarm(ri.alarm_fk, sw.isChecked());
+                        ri.alarmEnabled = sw.isChecked();
+                        Log.d(TAG,"Unchecked reminder " + ri.name);
                     }
                 }
             });

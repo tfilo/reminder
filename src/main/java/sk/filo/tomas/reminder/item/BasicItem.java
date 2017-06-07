@@ -7,17 +7,20 @@ package sk.filo.tomas.reminder.item;
 public class BasicItem {
     public String name;
     public Long id;
+    public Long alarm_fk;
 
-    public BasicItem(Long id, String name) {
+    public BasicItem(Long id, Long alarm_fk, String name) {
         this.id = id;
         this.name = name;
+        this.alarm_fk = alarm_fk;
     }
 
     @Override
     public String toString() {
         return "BasicItem{" +
-                "id='" + id + '\'' +
                 "name='" + name + '\'' +
+                ", id=" + id +
+                ", alarm_fk=" + alarm_fk +
                 '}';
     }
 }

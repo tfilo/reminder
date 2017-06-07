@@ -13,8 +13,8 @@ public class ContactItem extends BasicItem {
     public Date birthday;
     public Boolean alarmEnabled;
 
-    public ContactItem(Long id, String name, String icon, Date birthday, Boolean alarmEnabled) {
-        super(id, name);
+    public ContactItem(Long id, Long alarmFk, String name, String icon, Date birthday, Boolean alarmEnabled) {
+        super(id, alarmFk, name);
         this.icon = icon;
         this.birthday = birthday;
         this.alarmEnabled = alarmEnabled;

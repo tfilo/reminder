@@ -1,6 +1,7 @@
 package sk.filo.tomas.reminder;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -20,6 +21,7 @@ import android.view.MenuItem;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +46,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private final static int REQUEST_READ_CONTACTS = 1;
-    private final static String USE_CONTACTS = "use_contacts";
+    public final static String USE_CONTACTS = "use_contacts";
+    public final static String CONTACT_ALARM_TIME = "contact_alarm_time";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,9 +83,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateContactDatabase() {
+        Log.d(TAG, "UPDATE START TIME: " + System.currentTimeMillis() );
         Cursor contact = getContactsBirthdays();
         Map<Long, ContactItem> contacts = new HashMap<Long, ContactItem>();
         if (contact.moveToFirst()) {
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            SharedPreferences.Editor edit = sharedPreferences.edit();
+
             do {
                 String name = contact.getString(contact.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
                 Long contactId = contact.getLong(contact.getColumnIndex(ContactsContract.Contacts.NAME_RAW_CONTACT_ID));
@@ -92,17 +99,22 @@ public class MainActivity extends AppCompatActivity {
                 for (SimpleDateFormat f : birthdayFormats) {
                     try {
                         birthday = f.parse(bDay);
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(birthday);
+                        cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(CONTACT_ALARM_TIME,8)); // TODO update to coresponding time
+                        birthday = cal.getTime();
                         break;
                     } catch (ParseException e) {
                     }
                 }
-                ContactItem contactItem = new ContactItem(contactId, name, icon, birthday, null);
+                ContactItem contactItem = new ContactItem(contactId, null, name, icon, birthday, null);
                 contacts.put(contactItem.id, contactItem);
             } while (contact.moveToNext());
         }
 
         DatabaseHelper dbH = new DatabaseHelper(getApplicationContext());
         dbH.replaceUpdateContactsByMap(contacts);
+        Log.d(TAG, "UPDATE END TIME: " + System.currentTimeMillis());
     }
 
     @Override

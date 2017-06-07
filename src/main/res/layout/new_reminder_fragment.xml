@@ -10,6 +10,14 @@
         android:orientation="vertical"
         android:padding="10dp">
 
+        <Switch
+            android:id="@+id/alarm_enabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:padding="5dp"
+            android:text="@string/enabled_alarm"/>
+
         <EditText
             android:id="@+id/new_time"
             android:layout_width="match_parent"

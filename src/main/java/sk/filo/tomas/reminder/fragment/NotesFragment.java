@@ -2,7 +2,9 @@ package sk.filo.tomas.reminder.fragment;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -16,6 +18,7 @@ import java.util.List;
 
 import sk.filo.tomas.reminder.R;
 import sk.filo.tomas.reminder.adapter.BasicItemAdapter;
+import sk.filo.tomas.reminder.dao.DatabaseHelper;
 import sk.filo.tomas.reminder.item.BasicItem;
 import sk.filo.tomas.reminder.item.NoteItem;
 import sk.filo.tomas.reminder.listener.CustomItemClickListener;
@@ -41,17 +44,39 @@ public class NotesFragment extends Fragment {
 
         final List<BasicItem> mDataset = new ArrayList<BasicItem>();
 
-        for (int i = 0; i < 20; i++) {
-            mDataset.add(new NoteItem(null, "Name " + i, "Popis " + i));
-        }
+        DatabaseHelper mDbH = new DatabaseHelper(getContext());
+
+        List<NoteItem> noteItems = mDbH.readNotes();
+        mDataset.addAll(noteItems);
 
         CustomItemClickListener listener = new CustomItemClickListener() {
 
             @Override
             public void onItemClick(View v, int position) {
-                Toast.makeText(getContext(), mDataset.get(position).toString(), Toast.LENGTH_LONG).show();
+                FragmentManager sfm = getActivity().getSupportFragmentManager();
+                NewNoteFragment fragment = (NewNoteFragment) sfm.findFragmentByTag(NewNoteFragment.class.getName());
+                if (fragment == null) {
+                    fragment = new NewNoteFragment();
+                }
+                Bundle args = new Bundle();
+                args.putLong("RecordId", mDataset.get(position).id);
+                fragment.setArguments(args);
+                sfm.beginTransaction().replace(R.id.main_layout, fragment, NewNoteFragment.class.getName()).addToBackStack(NewNoteFragment.class.getName()).commit();
             }
         };
+
+        FloatingActionButton fab = (FloatingActionButton) w.findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FragmentManager sfm = getActivity().getSupportFragmentManager();
+                NewNoteFragment fragment = (NewNoteFragment) sfm.findFragmentByTag(NewNoteFragment.class.getName());
+                if (fragment == null) {
+                    fragment = new NewNoteFragment();
+                }
+                sfm.beginTransaction().replace(R.id.main_layout, fragment, NewNoteFragment.class.getName()).addToBackStack(NewNoteFragment.class.getName()).commit();
+            }
+        });
 
         mAdapter = new BasicItemAdapter(mDataset, getContext(), listener);
         mRecyclerView.setAdapter(mAdapter);

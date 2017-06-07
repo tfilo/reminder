@@ -11,8 +11,8 @@ public class ReminderItem extends BasicItem {
     public Date notificationTime;
     public Boolean alarmEnabled;
 
-    public ReminderItem(Long id, String name, String description, Date notificationTime, Boolean alarmEnabled) {
-        super(id, name);
+    public ReminderItem(Long id, Long alarmFk, String name, String description, Date notificationTime, Boolean alarmEnabled) {
+        super(id, alarmFk, name);
         this.description = description;
         this.notificationTime = notificationTime;
         this.alarmEnabled = alarmEnabled;

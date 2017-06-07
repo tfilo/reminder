@@ -3,7 +3,6 @@ package sk.filo.tomas.reminder.fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,11 +13,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import sk.filo.tomas.reminder.R;
 import sk.filo.tomas.reminder.adapter.BasicItemAdapter;
+import sk.filo.tomas.reminder.dao.DatabaseHelper;
 import sk.filo.tomas.reminder.item.BasicItem;
 import sk.filo.tomas.reminder.item.ReminderItem;
 import sk.filo.tomas.reminder.listener.CustomItemClickListener;
@@ -44,15 +43,23 @@ public class RemindersFragment extends Fragment {
 
         final List<BasicItem> mDataset = new ArrayList<BasicItem>();
 
-        for (int i = 0; i < 20; i++) {
-            mDataset.add(new ReminderItem(null, "Name " + i, "Popis " + i, new Date(), true));
-        }
+        DatabaseHelper mDbH = new DatabaseHelper(getContext());
+        List<ReminderItem> reminderItems = mDbH.readReminders();
+        mDataset.addAll(reminderItems);
 
         CustomItemClickListener listener = new CustomItemClickListener() {
 
             @Override
             public void onItemClick(View v, int position) {
-                Snackbar.make(getView(), mDataset.get(position).toString(), Snackbar.LENGTH_LONG).show();
+                FragmentManager sfm = getActivity().getSupportFragmentManager();
+                NewReminderFragment fragment = (NewReminderFragment) sfm.findFragmentByTag(NewReminderFragment.class.getName());
+                if (fragment == null) {
+                    fragment = new NewReminderFragment();
+                }
+                Bundle args = new Bundle();
+                args.putLong("RecordId", mDataset.get(position).id);
+                fragment.setArguments(args);
+                sfm.beginTransaction().replace(R.id.main_layout, fragment, NewReminderFragment.class.getName()).addToBackStack(NewReminderFragment.class.getName()).commit();
             }
         };
 

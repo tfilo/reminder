@@ -11,6 +11,7 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -228,7 +229,7 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
             String date = DateFormat.getDateTimeInstance().format(reminderItem.notificationTime);
             notificationTime.setText(date);
             alarmEnabled.setChecked(reminderItem.alarmEnabled);
-            alarmEnabled.setEnabled(reminderItem.alarmEnabled);
+            alarmEnabled.setEnabled(reminderItem.notificationTime.after(new Date()));
             description.setEnabled(reminderItem.alarmEnabled);
             notificationTime.setEnabled(reminderItem.alarmEnabled);
             alarmEnabled.setTag(reminderItem);
@@ -239,14 +240,16 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
                     Switch sw = (Switch) v;
                     ReminderItem ri = (ReminderItem) sw.getTag();
                     if (sw.isChecked()) {
-                        dbH.enableDisableAlarm(ri.alarm_fk, sw.isChecked());
-                        ri.alarmEnabled = sw.isChecked();
-                        Log.d(TAG,"Checked reminder " + ri.name);
-                    } else {
-                        dbH.enableDisableAlarm(ri.alarm_fk, sw.isChecked());
-                        ri.alarmEnabled = sw.isChecked();
-                        Log.d(TAG,"Unchecked reminder " + ri.name);
+                        if (ri.notificationTime.before(new Date())) {
+                            Toast toast = Toast.makeText(mCtx, R.string.date_time_before, Toast.LENGTH_LONG);
+                            toast.show();
+                            sw.setChecked(false);
+                            return;
+                        }
                     }
+                    dbH.enableDisableAlarm(ri.alarm_fk, sw.isChecked());
+                    ri.alarmEnabled = sw.isChecked();
+                    Log.d(TAG,"Un/checked reminder " + ri.name);
                 }
             });
         }

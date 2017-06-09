@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -120,6 +121,12 @@ public class NewReminderFragment extends Fragment {
                     alarmTime = dateTimeCal.getTime();
                 } catch (ParseException e) {
                     Log.d(TAG, "Unable parse dateTime string");
+                }
+
+                if (alarmTime.before(new Date()) && mAlarmEnabled.isChecked()) {
+                    Toast toast = Toast.makeText(getContext(), R.string.date_time_before, Toast.LENGTH_LONG);
+                    toast.show();
+                    return;
                 }
 
                 ReminderItem ri = new ReminderItem(

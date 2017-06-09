@@ -15,4 +15,5 @@
     <string name="reminder">Pripomienka</string>
     <string name="has_birthday">má narodeniny</string>
     <string name="done">Hotovo</string>
+    <string name="date_time_before">Nedá sa nastaviť alarm v minulosti</string>
 </resources>

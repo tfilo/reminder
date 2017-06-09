@@ -1,5 +1,6 @@
 package sk.filo.tomas.reminder.item;
 
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -10,12 +11,21 @@ public class ReminderItem extends BasicItem {
     public String description;
     public Date notificationTime;
     public Boolean alarmEnabled;
+    public Date lastExecuted;
 
-    public ReminderItem(Long id, Long alarmFk, String name, String description, Date notificationTime, Boolean alarmEnabled) {
+    public ReminderItem(Long id, Long alarmFk, String name, String description, Date notificationTime, Boolean alarmEnabled, Date lastExecuted) {
         super(id, alarmFk, name);
         this.description = description;
         this.notificationTime = notificationTime;
         this.alarmEnabled = alarmEnabled;
+        this.lastExecuted = lastExecuted;
+    }
+
+    public boolean executedThisYear() {
+        if (lastExecuted!=null && lastExecuted.getTime() >= notificationTime.getTime()) {
+            return true;
+        }
+        return false;
     }
 
     @Override

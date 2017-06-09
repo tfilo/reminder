@@ -188,7 +188,7 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
                     } else {
                         dbH.enableDisableAlarm(ci.alarm_fk, sw.isChecked());
                         ci.alarmEnabled = sw.isChecked();
-                        Log.d(TAG,"Checked contact " + ci.name);
+                        Log.d(TAG,"Unchecked contact " + ci.name);
                     }
                 }
             });

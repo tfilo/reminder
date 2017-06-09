@@ -11,9 +11,20 @@ public class AlarmItem {
 
     public Long id;
     public Date alarmTime;
+    public Date lastExecuted;
 
-    public AlarmItem(Long id, Date alarmTime) {
+    public AlarmItem(Long id, Date alarmTime, Date lastExecuted) {
         this.id = id;
         this.alarmTime = alarmTime;
+        this.lastExecuted = lastExecuted;
+    }
+
+    @Override
+    public String toString() {
+        return "AlarmItem{" +
+                "id=" + id +
+                ", alarmTime=" + alarmTime +
+                ", lastExecuted=" + lastExecuted +
+                '}';
     }
 }

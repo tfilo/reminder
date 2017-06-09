@@ -2,6 +2,7 @@ package sk.filo.tomas.reminder.item;
 
 import android.util.Log;
 
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -11,13 +12,31 @@ import java.util.Date;
 public class ContactItem extends BasicItem {
     public String icon;
     public Date birthday;
+    public Date alarmTime;
     public Boolean alarmEnabled;
+    public Date lastExecuted;
 
-    public ContactItem(Long id, Long alarmFk, String name, String icon, Date birthday, Boolean alarmEnabled) {
+    public ContactItem(Long id, Long alarmFk, String name, String icon, Date birthday, Date alarmTime, Boolean alarmEnabled, Date lastExecuted) {
         super(id, alarmFk, name);
         this.icon = icon;
         this.birthday = birthday;
+        this.alarmTime = alarmTime;
         this.alarmEnabled = alarmEnabled;
+        this.lastExecuted = lastExecuted;
+    }
+
+    public boolean executedThisYear() {
+        Calendar cal = Calendar.getInstance();
+        Integer year = cal.get(Calendar.YEAR);
+
+        Calendar birthdayThisYear = Calendar.getInstance();
+        birthdayThisYear.setTime(birthday);
+        birthdayThisYear.set(Calendar.YEAR,year);
+
+        if (lastExecuted!=null && lastExecuted.getTime() >= birthdayThisYear.getTime().getTime()) {
+            return true;
+        }
+        return false;
     }
 
     public boolean contactChanged(ContactItem compare) {

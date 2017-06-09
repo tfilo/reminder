@@ -1,6 +1,8 @@
 package sk.filo.tomas.reminder;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -11,6 +13,7 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -30,6 +33,7 @@ import sk.filo.tomas.reminder.adapter.ViewPagerAdapter;
 import sk.filo.tomas.reminder.dao.DatabaseHelper;
 import sk.filo.tomas.reminder.fragment.ContactsFragment;
 import sk.filo.tomas.reminder.fragment.MainFragment;
+import sk.filo.tomas.reminder.fragment.NewReminderFragment;
 import sk.filo.tomas.reminder.item.ContactItem;
 
 public class MainActivity extends AppCompatActivity {
@@ -80,6 +84,43 @@ public class MainActivity extends AppCompatActivity {
             }
             getSupportFragmentManager().beginTransaction().replace(R.id.main_layout, fg, MainFragment.class.getName()).commit();
         }
+
+        openReminderDetail();
+
+        AlarmManager am = (AlarmManager) this.getSystemService(this.ALARM_SERVICE);
+        Intent i = new Intent(this, SetTodaysAlarmsReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        cal.set(Calendar.DAY_OF_YEAR, cal.get(Calendar.DAY_OF_YEAR) + 1);
+
+        am.set(AlarmManager.RTC_WAKEUP, cal.getTime().getTime(), pendingIntent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        openReminderDetail();
+    }
+
+    private void openReminderDetail() {
+        String openFragment = getIntent().getStringExtra("openFragment");
+        Log.d(TAG, "openFragment: " + openFragment );
+        if ("NewReminderFragment".equals(openFragment)) {
+            Long id = getIntent().getLongExtra("reminderId", 0);
+            Log.d(TAG, "reminderId: " + id );
+            Fragment fg = new NewReminderFragment();
+            Bundle args = new Bundle();
+            args.putLong("RecordId", id);
+            fg.setArguments(args);
+
+            getIntent().removeExtra("openFragment");
+            getIntent().removeExtra("reminderId");
+            getSupportFragmentManager().beginTransaction().replace(R.id.main_layout, fg, NewReminderFragment.class.getName()).addToBackStack(NewReminderFragment.class.getName()).commit();
+        }
     }
 
     private void updateContactDatabase() {
@@ -95,19 +136,23 @@ public class MainActivity extends AppCompatActivity {
                 Long contactId = contact.getLong(contact.getColumnIndex(ContactsContract.Contacts.NAME_RAW_CONTACT_ID));
                 String icon = contact.getString(contact.getColumnIndex(ContactsContract.Data.PHOTO_THUMBNAIL_URI));
                 String bDay = contact.getString(contact.getColumnIndex(ContactsContract.CommonDataKinds.Event.START_DATE));
+                Date alarm = null;
                 Date birthday = null;
                 for (SimpleDateFormat f : birthdayFormats) {
                     try {
-                        birthday = f.parse(bDay);
+                        alarm = f.parse(bDay);
+                        birthday = alarm;
                         Calendar cal = Calendar.getInstance();
-                        cal.setTime(birthday);
-                        cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(CONTACT_ALARM_TIME,8)); // TODO update to coresponding time
-                        birthday = cal.getTime();
+                        Integer year = cal.get(Calendar.YEAR);
+                        cal.setTime(alarm);
+                        cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(CONTACT_ALARM_TIME,10)); // TODO update to coresponding time
+                        cal.set(Calendar.YEAR, year);
+                        alarm = cal.getTime();
                         break;
                     } catch (ParseException e) {
                     }
                 }
-                ContactItem contactItem = new ContactItem(contactId, null, name, icon, birthday, null);
+                ContactItem contactItem = new ContactItem(contactId, null, name, icon, birthday, alarm, null, null);
                 contacts.put(contactItem.id, contactItem);
             } while (contact.moveToNext());
         }

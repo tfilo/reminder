@@ -55,9 +55,12 @@ public class NewReminderFragment extends Fragment {
         final DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(getContext());
 
         Bundle arguments = this.getArguments();
+        ReminderItem reminderItem = null;
         if (arguments!=null && arguments.containsKey("RecordId")) {
             id = arguments.getLong("RecordId");
-            ReminderItem reminderItem = mDbH.readReminder(id);
+            reminderItem = mDbH.readReminder(id);
+        }
+        if (reminderItem!=null) {
             mTime.setText(timeFormat.format(reminderItem.notificationTime));
             mDate.setText(dateFormat.format(reminderItem.notificationTime));
             mName.setText(reminderItem.name);
@@ -125,8 +128,8 @@ public class NewReminderFragment extends Fragment {
                         mName.getText().toString(),
                         mDescription.getText().toString(),
                         alarmTime,
-                        mAlarmEnabled.isChecked()
-                        );
+                        mAlarmEnabled.isChecked(),
+                        null);
                 Log.d(TAG, ri.toString());
                 mDbH.replaceReminder(ri);
 

@@ -17,11 +17,21 @@ public class AlarmExtendedItem extends AlarmItem {
         CONTACT;
     }
 
-    public AlarmExtendedItem(Long id, Long parentId, Date alarmTime, String name, String description, Type type) {
-        super(id, alarmTime);
+    public AlarmExtendedItem(AlarmItem ai, Long parentId, String name, String description, Type type) {
+        super(ai.id, ai.alarmTime, ai.lastExecuted);
         this.name = name;
         this.description = description;
         this.type = type;
         this.parentId = parentId;
+    }
+
+    @Override
+    public String toString() {
+        return "AlarmExtendedItem{" +
+                "name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", type=" + type +
+                ", parentId=" + parentId +
+                '}';
     }
 }

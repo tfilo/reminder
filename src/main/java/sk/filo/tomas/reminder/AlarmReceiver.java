@@ -1,8 +1,12 @@
 package sk.filo.tomas.reminder;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.support.v4.app.NotificationManagerCompat;
@@ -10,6 +14,7 @@ import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
 import sk.filo.tomas.reminder.dao.DatabaseHelper;
+import sk.filo.tomas.reminder.fragment.NewReminderFragment;
 import sk.filo.tomas.reminder.item.AlarmExtendedItem;
 
 import static android.content.Context.POWER_SERVICE;
@@ -17,7 +22,7 @@ import static android.content.Context.POWER_SERVICE;
 /**
  * Created by tomas on 27.10.2016.
  */
-@Deprecated
+
 public class AlarmReceiver extends BroadcastReceiver {
 
     private static final String TAG = "AlarmReceiver";
@@ -36,30 +41,51 @@ public class AlarmReceiver extends BroadcastReceiver {
                 Log.d(TAG, "Receiving id " + id);
 
                 AlarmExtendedItem aei = dbH.getExtendedAlarmInfo(id);
+                Log.d(TAG, "AlarmExtendedItem " + aei.toString());
 
                 if (aei != null) {
                     NotificationManagerCompat mNotificationManager = NotificationManagerCompat.from(context);
                     NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
 
+                    Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                    if(alarmSound == null){
+                        alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+                        if(alarmSound == null){
+                            alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                        }
+                    }
+
                     switch (aei.type) {
                         case CONTACT:
                             builder.setSmallIcon(R.drawable.ic_redeem_white_24dp).setTicker(context.getString(R.string.birthday)).setWhen(System.currentTimeMillis())
-                                    .setContentTitle(context.getString(R.string.birthday)).setContentText(aei.name + " " + context.getString(R.string.has_birthday)).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH);
+                                    .setContentTitle(context.getString(R.string.birthday)).setContentText(aei.name + " " + context.getString(R.string.has_birthday)).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH)
+                                    .setSound(alarmSound);
                             break;
                         case REMINDER:
+                            Intent notificationIntent = new Intent(context, MainActivity.class);
+                            notificationIntent.putExtra("openFragment", "NewReminderFragment");
+                            notificationIntent.putExtra("reminderId", aei.parentId);
+
+                            PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
+                                    notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
                             builder.setSmallIcon(R.drawable.ic_alarm_white_24dp).setTicker(context.getString(R.string.reminder)).setWhen(System.currentTimeMillis())
-                                    .setContentTitle(aei.name).setContentText(aei.description).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH);
+                                    .setContentTitle(aei.name).setContentText(aei.description).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH)
+                                    .setSound(alarmSound).setContentIntent(pendingIntent);
                             dbH.enableDisableAlarm(id, false);
                             break;
                     }
 
                     if (Build.VERSION.SDK_INT >= 16) {
-                        mNotificationManager.notify(aei.id.intValue(), builder.build());
+                        Notification notif = builder.build();
+                        notif.flags |= Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
+                        mNotificationManager.notify(aei.id.intValue(), notif);
                     } else {
-                        mNotificationManager.notify(aei.id.intValue(), builder.getNotification());
+                        Notification notif = builder.getNotification();
+                        notif.flags |= Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
+                        mNotificationManager.notify(aei.id.intValue(), notif);
                     }
-
-
+                    dbH.updateLastExecuted(id, aei.alarmTime);
                 }
             }
         } finally {

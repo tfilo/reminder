@@ -10,9 +10,11 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -38,15 +40,8 @@ import static android.content.Context.POWER_SERVICE;
 public class SetTodaysAlarmsReceiver extends BroadcastReceiver {
 
     private final String TAG = "SetTodaysAlarmsReceiver";
-    private final static String CONTACT_ALARM_TIME = "contact_alarm_time";
-    private static final SimpleDateFormat[] birthdayFormats = {
-            new SimpleDateFormat("yyyy-MM-dd"),
-            new SimpleDateFormat("yyyy.MM.dd"),
-            new SimpleDateFormat("yy-MM-dd"),
-            new SimpleDateFormat("yy.MM.dd"),
-            new SimpleDateFormat("yy/MM/dd"),
-            new SimpleDateFormat("MMM dd, yyyy")
-    };
+
+    private final ContactsHelper contactsHelper = new ContactsHelper();
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -58,7 +53,17 @@ public class SetTodaysAlarmsReceiver extends BroadcastReceiver {
 
             int permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS);
             if (PackageManager.PERMISSION_GRANTED == permissionCheck) {
-                updateContactDatabase(context);
+                contactsHelper.updateContactDatabase(context);
+            }
+
+            // When new year, need to update all contact birthday alerts to this year
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+            Calendar cal = Calendar.getInstance();
+            if (cal.get(Calendar.YEAR) > sharedPreferences.getInt(MainActivity.LAST_YEAR, 2000)) {
+                Log.d(TAG, "Contact birthday update for new year");
+                DatabaseHelper dbH = new DatabaseHelper(context);
+                dbH.updateContactAlarmDatesAndTimes();
+                sharedPreferences.edit().putInt(MainActivity.LAST_YEAR, cal.get(Calendar.YEAR)).commit();
             }
 
             Log.d(TAG, "Alarm will be updated");
@@ -78,14 +83,21 @@ public class SetTodaysAlarmsReceiver extends BroadcastReceiver {
                         ai.alarmTime.setTime(now.getTime());
                     }
                     Log.d(TAG, "Alarm set to " + ai.alarmTime.getTime());
-                    am.set(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+
+                    if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT){
+                        am.set(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+                    } else {
+                        if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+                            am.setExact(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+                        } else {
+                            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+                        }
+                    }
                 }
             }
 
             Intent i = new Intent(context, SetTodaysAlarmsReceiver.class);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            Calendar cal = Calendar.getInstance();
 
             cal.set(Calendar.HOUR_OF_DAY, 0);
             cal.set(Calendar.MINUTE, 0);
@@ -93,68 +105,18 @@ public class SetTodaysAlarmsReceiver extends BroadcastReceiver {
             cal.set(Calendar.MILLISECOND, 0);
             cal.set(Calendar.DAY_OF_YEAR, cal.get(Calendar.DAY_OF_YEAR) + 1);
 
-            am.set(AlarmManager.RTC_WAKEUP, cal.getTime().getTime(), pendingIntent); // update alarms next day on midnight
+            // update alarms next day on midnight
+            if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT){
+                am.set(AlarmManager.RTC_WAKEUP, cal.getTime().getTime(), pendingIntent);
+            } else {
+                if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+                    am.setExact(AlarmManager.RTC_WAKEUP, cal.getTime().getTime(), pendingIntent);
+                } else {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTime().getTime(), pendingIntent);
+                }
+            }
         } finally {
             wakeLock.release();
         }
-    }
-
-    private void updateContactDatabase(Context context) {
-        Log.d(TAG, "UPDATE START TIME: " + System.currentTimeMillis() );
-        Cursor contact = getContactsBirthdays(context);
-        Map<Long, ContactItem> contacts = new HashMap<Long, ContactItem>();
-        if (contact.moveToFirst()) {
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-            SharedPreferences.Editor edit = sharedPreferences.edit();
-
-            do {
-                String name = contact.getString(contact.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                Long contactId = contact.getLong(contact.getColumnIndex(ContactsContract.Contacts.NAME_RAW_CONTACT_ID));
-                String icon = contact.getString(contact.getColumnIndex(ContactsContract.Data.PHOTO_THUMBNAIL_URI));
-                String bDay = contact.getString(contact.getColumnIndex(ContactsContract.CommonDataKinds.Event.START_DATE));
-                Date alarm = null;
-                Date birthday = null;
-                for (SimpleDateFormat f : birthdayFormats) {
-                    try {
-                        alarm = f.parse(bDay);
-                        birthday = alarm;
-                        Calendar cal = Calendar.getInstance();
-                        Integer year = cal.get(Calendar.YEAR);
-                        cal.setTime(alarm);
-                        cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(CONTACT_ALARM_TIME,10)); // TODO update to coresponding time
-                        cal.set(Calendar.YEAR, year);
-                        alarm = cal.getTime();
-                        break;
-                    } catch (ParseException e) {
-                    }
-                }
-                ContactItem contactItem = new ContactItem(contactId, null, name, icon, birthday, alarm, null, null);
-                contacts.put(contactItem.id, contactItem);
-            } while (contact.moveToNext());
-        }
-
-        DatabaseHelper dbH = new DatabaseHelper(context);
-        dbH.replaceUpdateContactsByMap(contacts);
-        Log.d(TAG, "UPDATE END TIME: " + System.currentTimeMillis());
-    }
-
-    private Cursor getContactsBirthdays(Context context) {
-        Uri uri = ContactsContract.Data.CONTENT_URI;
-
-        String[] projection = new String[]{
-                ContactsContract.Contacts.DISPLAY_NAME,
-                ContactsContract.Contacts.NAME_RAW_CONTACT_ID,
-                ContactsContract.Data.PHOTO_THUMBNAIL_URI,
-                ContactsContract.CommonDataKinds.Event.START_DATE
-        };
-
-        String where = ContactsContract.Data.MIMETYPE + "= ? AND " +
-                ContactsContract.CommonDataKinds.Event.TYPE + "=" +
-                ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY;
-        String[] selectionArgs = new String[]{
-                ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE
-        };
-        String sortOrder = null;
-        return context.getContentResolver().query(uri, projection, where, selectionArgs, sortOrder);
     }
 }

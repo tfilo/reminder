@@ -15,4 +15,9 @@
     <string name="has_birthday">has birthday</string>
     <string name="done">Done</string>
     <string name="date_time_before">Can\'t setup alarm in past.</string>
+    <string name="default_time_notification">Birthday notification time (0-23h)</string>
+    <string name="ringtone_picker">Choose notification sound</string>
+    <string name="save">Save settings</string>
+    <string name="birthday_alerts">Enable Birthday alerts</string>
+    <string name="invalid_ringtone">Invalid ringtone</string>
 </resources>

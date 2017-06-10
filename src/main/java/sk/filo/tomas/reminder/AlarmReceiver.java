@@ -5,10 +5,12 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
@@ -47,13 +49,8 @@ public class AlarmReceiver extends BroadcastReceiver {
                     NotificationManagerCompat mNotificationManager = NotificationManagerCompat.from(context);
                     NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
 
-                    Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                    if(alarmSound == null){
-                        alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-                        if(alarmSound == null){
-                            alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                        }
-                    }
+                    final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+                    Uri alarmSound = Uri.parse(sharedPreferences.getString(MainActivity.RING_TONE, ""));
 
                     switch (aei.type) {
                         case CONTACT:

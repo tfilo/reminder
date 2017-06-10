@@ -10,21 +10,19 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import sk.filo.tomas.reminder.AlarmReceiver;
-import sk.filo.tomas.reminder.MainActivity;
+import sk.filo.tomas.reminder.ContactsHelper;
 import sk.filo.tomas.reminder.item.AlarmExtendedItem;
 import sk.filo.tomas.reminder.item.AlarmItem;
 import sk.filo.tomas.reminder.item.ContactItem;
@@ -236,7 +234,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         for (ContactItem oldContact : contactItems) {
             if (contacts.containsKey(oldContact.id)) {
                 ContactItem newContact = contacts.get(oldContact.id);
-                if (newContact.contactChanged(oldContact)) { // if some contact information changed, update it in old contact in databaze, this preserve alarm_enabled etc
+                if (newContact.contactChanged(oldContact)) { // if some contact information changed, update it in old contact in database, this preserve alarm_enabled etc
                     oldContact.icon = newContact.icon;
                     oldContact.birthday = newContact.birthday;
                     oldContact.name = newContact.name;
@@ -256,6 +254,59 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public void removeAllContacts() {
+        List<ContactItem> contactItems = readContacts();
+        for (ContactItem contact : contactItems) {
+            removeRecord(contact.id, contact.alarm_fk, "contacts");
+        }
+    }
+
+    public void updateContactAlarmDatesAndTimes() {
+        List<ContactItem> contactItems = readContacts();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mCtx);
+        SQLiteDatabase wd = this.getWritableDatabase();
+        wd.beginTransaction();
+        try {
+            for (ContactItem contact : contactItems) {
+                Calendar cal = Calendar.getInstance();
+                Integer year = cal.get(Calendar.YEAR);
+                cal.setTime(contact.birthday);
+                cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(ContactsHelper.CONTACT_ALARM_TIME, ContactsHelper.CONTACT_ALARM_TIME_DEFAULT));
+                cal.set(Calendar.MINUTE, 0);
+                cal.set(Calendar.YEAR, year);
+                ContentValues alarm = new ContentValues();
+                if (contact.alarm_fk != null) {
+                    alarm.put("id", contact.alarm_fk);
+                    alarm.put("alarm_time", getDateTime(cal.getTime()));
+                    alarm.put("every_year", true);
+                    if (contact.alarmEnabled != null) {
+                        alarm.put("alarm_enabled", contact.alarmEnabled);
+                    }
+                    if (contact.lastExecuted != null) {
+                        alarm.put("last_executed", getDateTime(contact.lastExecuted));
+                    } else { // if adding new contact or contact newer execuded before, use actual date to prevent reminder on next device boot or midnight when missed alarms are set again
+                        Calendar yesterday = Calendar.getInstance();
+                        yesterday.set(Calendar.MINUTE, 0);
+                        yesterday.set(Calendar.HOUR_OF_DAY, 0);
+                        yesterday.set(Calendar.MILLISECOND, 0);
+                        alarm.put("last_executed", getDateTime(yesterday.getTime()));
+                    }
+                    wd.replaceOrThrow("alarms", null, alarm);
+                }
+            }
+            wd.setTransactionSuccessful();
+        } catch (SQLException sqlE) {
+            Log.d(TAG, "Cannot write Alarm to database, " + sqlE.getMessage());
+        } finally {
+            wd.endTransaction();
+            wd.close();
+        }
+
+        for (ContactItem contact : contactItems) {
+            addUpdateOrRemoveAlarm(contact.alarm_fk); // update every setted alarm
+        }
+    }
+
     public long replaceContact(ContactItem item) {
         SQLiteDatabase wd = this.getWritableDatabase();
         long contact_id = -1L;
@@ -268,7 +319,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             Calendar cal = Calendar.getInstance();
             Integer year = cal.get(Calendar.YEAR);
             cal.setTime(item.birthday);
-            cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(MainActivity.CONTACT_ALARM_TIME, 10));
+            cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(ContactsHelper.CONTACT_ALARM_TIME, ContactsHelper.CONTACT_ALARM_TIME_DEFAULT));
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.YEAR, year);
 
@@ -283,6 +334,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
             if (item.lastExecuted != null) {
                 alarm.put("last_executed", getDateTime(item.lastExecuted));
+            } else { // if adding new contact or contact newer execuded before, use actual date to prevent reminder on next device boot or midnight when missed alarms are set again
+                Calendar yesterday = Calendar.getInstance();
+                yesterday.set(Calendar.MINUTE, 0);
+                yesterday.set(Calendar.HOUR_OF_DAY, 0);
+                yesterday.set(Calendar.MILLISECOND, 0);
+                alarm.put("last_executed", getDateTime(yesterday.getTime()));
             }
 
             alarm_id = wd.replaceOrThrow("alarms", null, alarm);
@@ -560,7 +617,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             if (ai.alarmTime.after(new Date()) && ai.alarmTime.before(thisMidnight.getTime())) { // set alarms from now to midnight
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(mCtx, id.intValue(), i, PendingIntent.FLAG_UPDATE_CURRENT);
-                am.set(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+                if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT){
+                    am.set(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+                } else {
+                    if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+                        am.setExact(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+                    } else {
+                        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
+                    }
+                }
                 Log.d(TAG, "Alarm with id " + id + " updated");
             }
         }

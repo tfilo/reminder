@@ -14,7 +14,6 @@
     <string name="birthday">Narodeniny</string>
     <string name="reminder">Pripomienka</string>
     <string name="has_birthday">má narodeniny</string>
-    <string name="done">Hotovo</string>
     <string name="date_time_before">Nedá sa nastaviť alarm v minulosti</string>
     <string name="default_time_notification">Čas upozornenia narodenín (0-23h)</string>
     <string name="ringtone_picker">Vyberte zvuk notifikácie</string>

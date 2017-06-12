@@ -8,7 +8,6 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.util.Log;
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -70,21 +69,13 @@ public class ContactsUtil {
     }
 
     private Date prepareAlarmTime(Date birthday, SharedPreferences sharedPreferences, Context context) {
-        DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(context);
         String timeString = sharedPreferences.getString(CONTACT_ALARM_TIME,CONTACT_ALARM_TIME_DEFAULT);
-        Integer hours;
-        Integer minutes;
-        try {
-            Date time = timeFormat.parse(timeString);
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(time);
-            hours = cal.get(Calendar.HOUR_OF_DAY);
-            minutes = cal.get(Calendar.MINUTE);
-        } catch (ParseException e) {
-            Log.d(TAG, "Error parsing time of birthday notification");
-            hours = 10;
-            minutes = 0;
-        }
+        Date time = DateTimeUtil.parseTime(timeString);
+        Calendar timeCal = Calendar.getInstance();
+        timeCal.setTime(time);
+        Integer hours = timeCal.get(Calendar.HOUR_OF_DAY);
+        Integer minutes = timeCal.get(Calendar.MINUTE);
+
         Calendar cal = Calendar.getInstance();
         Integer year = cal.get(Calendar.YEAR);
         cal.setTime(birthday);
@@ -127,19 +118,15 @@ public class ContactsUtil {
     }
 
     public BirthDayTime getBirthDayNotificationTime(Context context) {
-        DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(context);
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         String timeString = sharedPreferences.getString(ContactsUtil.CONTACT_ALARM_TIME, ContactsUtil.CONTACT_ALARM_TIME_DEFAULT);
         BirthDayTime bday;
-        try {
-            Date time = timeFormat.parse(timeString);
-            Calendar cal1 = Calendar.getInstance();
-            cal1.setTime(time);
-            bday = new BirthDayTime(cal1.get(Calendar.HOUR_OF_DAY), cal1.get(Calendar.MINUTE));
-        } catch (ParseException e) {
-            Log.d(TAG, "Error parsing time of birthday notification");
-            bday = new BirthDayTime(10, 0);
-        }
+
+        Date time = DateTimeUtil.parseTime(timeString);
+        Calendar cal1 = Calendar.getInstance();
+        cal1.setTime(time);
+        bday = new BirthDayTime(cal1.get(Calendar.HOUR_OF_DAY), cal1.get(Calendar.MINUTE));
+
         return bday;
     }
 }

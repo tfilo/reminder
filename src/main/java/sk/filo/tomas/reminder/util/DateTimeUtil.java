@@ -1,5 +1,6 @@
 package sk.filo.tomas.reminder.util;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -48,5 +49,19 @@ public class DateTimeUtil {
         lastMidnight.set(Calendar.SECOND, 0);
         lastMidnight.set(Calendar.MILLISECOND, 0);
         return lastMidnight;
+    }
+
+    public static Date parseTime(String time) {
+        SimpleDateFormat[] formats = { new SimpleDateFormat("HH:mm"), new SimpleDateFormat("hh:mm a") };
+        Date date = null;
+        for (SimpleDateFormat sdf : formats) {
+            try {
+                date = sdf.parse(time);
+                break;
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+        return date;
     }
 }

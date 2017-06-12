@@ -14,6 +14,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import sk.filo.tomas.reminder.R;
+import sk.filo.tomas.reminder.util.DateTimeUtil;
 
 /**
  * Created by tomas on 19.10.2016.
@@ -37,15 +38,11 @@ public class TimePickerFragment extends DialogFragment
         hour = c.get(Calendar.HOUR_OF_DAY);
         minute = c.get(Calendar.MINUTE);
         if (getArguments().containsKey(TIME)) {
-            try {
-                Date time = timeFormat.parse(getArguments().getString(TIME));
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(time);
-                hour = cal.get(Calendar.HOUR_OF_DAY);
-                minute = cal.get(Calendar.MINUTE);
-            } catch (ParseException e) {
-                Log.d(TAG, "Error parsing time notification");
-            }
+            Date time = DateTimeUtil.parseTime(getArguments().getString(TIME));
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(time);
+            hour = cal.get(Calendar.HOUR_OF_DAY);
+            minute = cal.get(Calendar.MINUTE);
         }
         return new TimePickerDialog(getActivity(), this, hour, minute,
                 DateFormat.is24HourFormat(getActivity()));

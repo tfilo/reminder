@@ -24,7 +24,7 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.Toast;
 
-import sk.filo.tomas.reminder.helper.ContactsHelper;
+import sk.filo.tomas.reminder.util.ContactsUtil;
 import sk.filo.tomas.reminder.MainActivity;
 import sk.filo.tomas.reminder.R;
 
@@ -36,7 +36,7 @@ public class SettingsFragment extends Fragment {
     private EditText mBdayNotificationTime;
     private Button mChooseNotification;
 
-    private final ContactsHelper contactsHelper = new ContactsHelper();
+    private final ContactsUtil contactsUtil = new ContactsUtil();
 
     public SettingsFragment() {
     }
@@ -54,7 +54,7 @@ public class SettingsFragment extends Fragment {
 
         mBdayAlerts.setChecked(sharedPreferences.getBoolean(MainActivity.USE_CONTACTS, true));
 
-        mBdayNotificationTime.setText(sharedPreferences.getString(ContactsHelper.CONTACT_ALARM_TIME,"10:00"));
+        mBdayNotificationTime.setText(sharedPreferences.getString(ContactsUtil.CONTACT_ALARM_TIME,"10:00"));
 
         mChooseNotification.setOnClickListener(new View.OnClickListener()
         {
@@ -80,12 +80,12 @@ public class SettingsFragment extends Fragment {
                                 new String[]{Manifest.permission.READ_CONTACTS},
                                 MainActivity.REQUEST_READ_CONTACTS_FROM_SETTINGS);
                     } else {
-                        contactsHelper.updateContactDatabase(getContext());
+                        contactsUtil.updateContactDatabase(getContext());
                         sharedPreferences.edit().putBoolean(MainActivity.USE_CONTACTS, true).commit();
                     }
                 } else {
                     sharedPreferences.edit().putBoolean(MainActivity.USE_CONTACTS, false).commit();
-                    contactsHelper.removeContacts(getContext());
+                    contactsUtil.removeContacts(getContext());
                 }
             }
         });
@@ -105,8 +105,8 @@ public class SettingsFragment extends Fragment {
             public void afterTextChanged(Editable editable) {
                 String newValue = editable.toString();
                 if (!newValue.isEmpty()) {
-                    sharedPreferences.edit().putString(ContactsHelper.CONTACT_ALARM_TIME, newValue).commit();
-                    contactsHelper.updateContactsAlarmTime(getContext());
+                    sharedPreferences.edit().putString(ContactsUtil.CONTACT_ALARM_TIME, newValue).commit();
+                    contactsUtil.updateContactsAlarmTime(getContext());
                 }
             }
         });

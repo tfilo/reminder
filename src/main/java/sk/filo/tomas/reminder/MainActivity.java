@@ -29,7 +29,7 @@ import sk.filo.tomas.reminder.fragment.ContactsFragment;
 import sk.filo.tomas.reminder.fragment.MainFragment;
 import sk.filo.tomas.reminder.fragment.NewReminderFragment;
 import sk.filo.tomas.reminder.fragment.SettingsFragment;
-import sk.filo.tomas.reminder.helper.ContactsHelper;
+import sk.filo.tomas.reminder.util.ContactsUtil;
 import sk.filo.tomas.reminder.receiver.SetTodaysAlarmsReceiver;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     public final static String LAST_YEAR = "LAST_YEAR";
     public final static String RING_TONE = "RING_TONE";
 
-    private final ContactsHelper contactHelper = new ContactsHelper();
+    private final ContactsUtil contactHelper = new ContactsUtil();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -1,4 +1,4 @@
-package sk.filo.tomas.reminder.helper;
+package sk.filo.tomas.reminder.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -23,20 +23,9 @@ import sk.filo.tomas.reminder.item.ContactItem;
  * Created by tomas on 10.6.2017.
  */
 
-public class ContactsHelper {
+public class ContactsUtil {
 
-    private static String TAG = "ContactsHelper";
-
-    private static final SimpleDateFormat[] birthdayFormats = {
-            new SimpleDateFormat("yyyy-MM-dd"),
-            new SimpleDateFormat("yyyy.MM.dd"),
-            new SimpleDateFormat("yy-MM-dd"),
-            new SimpleDateFormat("yy.MM.dd"),
-            new SimpleDateFormat("yy/MM/dd"),
-            new SimpleDateFormat("MMM dd, yyyy")
-    };
-
-    private static final SimpleDateFormat birthdayFormatNoYear = new SimpleDateFormat("--MM-dd");
+    private static String TAG = "ContactsUtil";
 
     public final static String CONTACT_ALARM_TIME = "contact_alarm_time";
     public final static String CONTACT_ALARM_TIME_DEFAULT = "10:00";
@@ -55,14 +44,14 @@ public class ContactsHelper {
                 Date alarm = null;
                 Date birthday = null;
                 Boolean hasYear = true;
-                for (SimpleDateFormat f : birthdayFormats) {
+                for (SimpleDateFormat f : DateTimeUtil.birthdayFormats) {
                     try {
                         birthday = f.parse(bDay);
                         alarm = prepareAlarmTime(birthday, sharedPreferences, context);
                         break;
                     } catch (ParseException e) {
                         try {
-                            birthday = birthdayFormatNoYear.parse(bDay);
+                            birthday = DateTimeUtil.birthdayFormatNoYear.parse(bDay);
                             hasYear = false;
                             alarm = prepareAlarmTime(birthday, sharedPreferences, context);
                         } catch (ParseException e1) {}
@@ -140,7 +129,7 @@ public class ContactsHelper {
     public BirthDayTime getBirthDayNotificationTime(Context context) {
         DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(context);
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        String timeString = sharedPreferences.getString(ContactsHelper.CONTACT_ALARM_TIME,ContactsHelper.CONTACT_ALARM_TIME_DEFAULT);
+        String timeString = sharedPreferences.getString(ContactsUtil.CONTACT_ALARM_TIME, ContactsUtil.CONTACT_ALARM_TIME_DEFAULT);
         BirthDayTime bday;
         try {
             Date time = timeFormat.parse(timeString);

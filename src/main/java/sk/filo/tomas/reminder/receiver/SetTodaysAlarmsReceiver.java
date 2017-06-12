@@ -17,7 +17,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import sk.filo.tomas.reminder.helper.ContactsHelper;
+import sk.filo.tomas.reminder.util.ContactsUtil;
 import sk.filo.tomas.reminder.MainActivity;
 import sk.filo.tomas.reminder.dao.DatabaseHelper;
 import sk.filo.tomas.reminder.item.AlarmItem;
@@ -32,7 +32,7 @@ public class SetTodaysAlarmsReceiver extends BroadcastReceiver {
 
     private final String TAG = "SetTodaysAlarmsReceiver";
 
-    private final ContactsHelper contactsHelper = new ContactsHelper();
+    private final ContactsUtil contactsUtil = new ContactsUtil();
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -44,7 +44,7 @@ public class SetTodaysAlarmsReceiver extends BroadcastReceiver {
 
             int permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS);
             if (PackageManager.PERMISSION_GRANTED == permissionCheck) {
-                contactsHelper.updateContactDatabase(context);
+                contactsUtil.updateContactDatabase(context);
             }
 
             // When new year, need to update all contact birthday alerts to this year

@@ -1,4 +1,4 @@
-package sk.filo.tomas.reminder.helper;
+package sk.filo.tomas.reminder.util;
 
 /**
  * Created by tomas on 12.6.2017.

@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import sk.filo.tomas.reminder.MainActivity;
 import sk.filo.tomas.reminder.R;
 import sk.filo.tomas.reminder.adapter.ViewPagerAdapter;
 
@@ -22,7 +23,6 @@ import sk.filo.tomas.reminder.adapter.ViewPagerAdapter;
 public class MainFragment extends Fragment {
 
     private final static String TAG = "MainFragment";
-    private final static String USE_CONTACTS = "use_contacts";
     private TabLayout mTabLayout;
     private ViewPager mViewPager;
 
@@ -48,7 +48,7 @@ public class MainFragment extends Fragment {
         adapter.addFragment(new RemindersFragment(), getString(R.string.reminders));
         adapter.addFragment(new NotesFragment(), getString(R.string.notes));
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
-        if (sharedPreferences.getBoolean(USE_CONTACTS, true)) {
+        if (sharedPreferences.getBoolean(MainActivity.USE_CONTACTS, true)) {
             adapter.addFragment(new ContactsFragment(), getString(R.string.contacts));
         }
         viewPager.setAdapter(adapter);

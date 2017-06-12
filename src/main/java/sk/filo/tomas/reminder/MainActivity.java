@@ -29,6 +29,8 @@ import sk.filo.tomas.reminder.fragment.ContactsFragment;
 import sk.filo.tomas.reminder.fragment.MainFragment;
 import sk.filo.tomas.reminder.fragment.NewReminderFragment;
 import sk.filo.tomas.reminder.fragment.SettingsFragment;
+import sk.filo.tomas.reminder.helper.ContactsHelper;
+import sk.filo.tomas.reminder.receiver.SetTodaysAlarmsReceiver;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     private final static int REQUEST_READ_CONTACTS = 1;
     public final static int REQUEST_READ_CONTACTS_FROM_SETTINGS = 2;
-    private final static String USE_CONTACTS = "use_contacts";
+    public final static String USE_CONTACTS = "use_contacts";
     public final static String LAST_YEAR = "LAST_YEAR";
     public final static String RING_TONE = "RING_TONE";
 
@@ -176,6 +178,18 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     }
+                }
+                break;
+            }
+            case REQUEST_READ_CONTACTS_FROM_SETTINGS: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    contactHelper.updateContactDatabase(getApplicationContext());
+                    edit.putBoolean(USE_CONTACTS, true);
+                } else {
+                    Log.d(TAG, "PERMISSION DENIED");
+                    edit.putBoolean(USE_CONTACTS, false);
+                    contactHelper.removeContacts(getApplicationContext());
                 }
                 break;
             }

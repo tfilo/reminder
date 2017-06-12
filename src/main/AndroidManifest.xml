@@ -22,10 +22,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <receiver android:name="AlarmReceiver">
+        <receiver android:name=".receiver.AlarmReceiver">
 
         </receiver>
-        <receiver android:name="sk.filo.tomas.reminder.SetTodaysAlarmsReceiver" >
+        <receiver android:name="sk.filo.tomas.reminder.receiver.SetTodaysAlarmsReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>

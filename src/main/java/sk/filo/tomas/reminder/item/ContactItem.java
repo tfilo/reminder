@@ -15,14 +15,16 @@ public class ContactItem extends BasicItem {
     public Date alarmTime;
     public Boolean alarmEnabled;
     public Date lastExecuted;
+    public Boolean hasYear;
 
-    public ContactItem(Long id, Long alarmFk, String name, String icon, Date birthday, Date alarmTime, Boolean alarmEnabled, Date lastExecuted) {
+    public ContactItem(Long id, Long alarmFk, String name, String icon, Date birthday, Date alarmTime, Boolean alarmEnabled, Date lastExecuted, Boolean hasYear) {
         super(id, alarmFk, name);
         this.icon = icon;
         this.birthday = birthday;
         this.alarmTime = alarmTime;
         this.alarmEnabled = alarmEnabled;
         this.lastExecuted = lastExecuted;
+        this.hasYear = hasYear;
     }
 
     public boolean executedThisYear() {
@@ -62,6 +64,10 @@ public class ContactItem extends BasicItem {
             Log.d("contactChanged", "compare.name");
             return true;
         }
+        if (!compare.hasYear.equals(this.hasYear)) {
+            Log.d("contactChanged", "compare.hasYear");
+            return true;
+        }
         return false;
     }
 
@@ -70,7 +76,10 @@ public class ContactItem extends BasicItem {
         return super.toString() + " ContactItem{" +
                 "icon='" + icon + '\'' +
                 ", birthday=" + birthday +
+                ", alarmTime=" + alarmTime +
                 ", alarmEnabled=" + alarmEnabled +
+                ", lastExecuted=" + lastExecuted +
+                ", hasYear=" + hasYear +
                 '}';
     }
 }

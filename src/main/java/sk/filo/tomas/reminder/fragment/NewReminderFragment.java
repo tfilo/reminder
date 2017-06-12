@@ -6,6 +6,8 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -80,6 +82,9 @@ public class NewReminderFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 DialogFragment newFragment = new TimePickerFragment();
+                Bundle bundle = new Bundle();
+                bundle.putInt(TimePickerFragment.TARGET_ID, R.id.new_time);
+                newFragment.setArguments(bundle);
                 newFragment.show(getActivity().getSupportFragmentManager(), TimePickerFragment.class.getName());
             }
         });

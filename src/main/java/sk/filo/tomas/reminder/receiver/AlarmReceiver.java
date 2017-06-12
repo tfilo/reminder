@@ -1,4 +1,4 @@
-package sk.filo.tomas.reminder;
+package sk.filo.tomas.reminder.receiver;
 
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
@@ -15,8 +14,9 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
+import sk.filo.tomas.reminder.MainActivity;
+import sk.filo.tomas.reminder.R;
 import sk.filo.tomas.reminder.dao.DatabaseHelper;
-import sk.filo.tomas.reminder.fragment.NewReminderFragment;
 import sk.filo.tomas.reminder.item.AlarmExtendedItem;
 
 import static android.content.Context.POWER_SERVICE;

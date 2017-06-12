@@ -10,9 +10,11 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
-import android.text.InputFilter;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,8 +24,7 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.Toast;
 
-import sk.filo.tomas.reminder.ContactsHelper;
-import sk.filo.tomas.reminder.InputMinMaxFilter;
+import sk.filo.tomas.reminder.helper.ContactsHelper;
 import sk.filo.tomas.reminder.MainActivity;
 import sk.filo.tomas.reminder.R;
 
@@ -34,16 +35,8 @@ public class SettingsFragment extends Fragment {
     private Switch mBdayAlerts;
     private EditText mBdayNotificationTime;
     private Button mChooseNotification;
-    private Button mSave;
-
-    private Uri notificationUri;
-    private Integer notificationTime;
-    private Boolean notificationEnabled;
 
     private final ContactsHelper contactsHelper = new ContactsHelper();
-
-    public final static String USE_CONTACTS = "use_contacts";
-    public final static String CONTACT_ALARM_TIME = "contact_alarm_time";
 
     public SettingsFragment() {
     }
@@ -56,18 +49,12 @@ public class SettingsFragment extends Fragment {
         mBdayAlerts = (Switch) w.findViewById(R.id.use_contacts);
         mBdayNotificationTime = (EditText) w.findViewById(R.id.defaultContactAlert);
         mChooseNotification = (Button) w.findViewById(R.id.ringtone_picker);
-        mSave = (Button) w.findViewById(R.id.save_settings);
-
-        mBdayNotificationTime.setFilters(new InputFilter[]{ new InputMinMaxFilter("0", "23")});
 
         final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getContext());
 
-        notificationEnabled = sharedPreferences.getBoolean(USE_CONTACTS, true);
-        notificationTime = sharedPreferences.getInt(CONTACT_ALARM_TIME,10);
-        notificationUri = Uri.parse(sharedPreferences.getString(MainActivity.RING_TONE, ""));
+        mBdayAlerts.setChecked(sharedPreferences.getBoolean(MainActivity.USE_CONTACTS, true));
 
-        mBdayAlerts.setChecked(notificationEnabled);
-        mBdayNotificationTime.setText(String.valueOf(notificationTime));
+        mBdayNotificationTime.setText(sharedPreferences.getString(ContactsHelper.CONTACT_ALARM_TIME,"10:00"));
 
         mChooseNotification.setOnClickListener(new View.OnClickListener()
         {
@@ -78,7 +65,7 @@ public class SettingsFragment extends Fragment {
                 intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
                 intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
                 intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,RingtoneManager.TYPE_ALARM);
-                intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, notificationUri);
+                intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(sharedPreferences.getString(MainActivity.RING_TONE, "")));
                 startActivityForResult( intent, 123);
             }
         });
@@ -92,44 +79,47 @@ public class SettingsFragment extends Fragment {
                         ActivityCompat.requestPermissions(getActivity(),
                                 new String[]{Manifest.permission.READ_CONTACTS},
                                 MainActivity.REQUEST_READ_CONTACTS_FROM_SETTINGS);
+                    } else {
+                        contactsHelper.updateContactDatabase(getContext());
+                        sharedPreferences.edit().putBoolean(MainActivity.USE_CONTACTS, true).commit();
                     }
+                } else {
+                    sharedPreferences.edit().putBoolean(MainActivity.USE_CONTACTS, false).commit();
+                    contactsHelper.removeContacts(getContext());
                 }
             }
         });
 
-        mSave.setOnClickListener(new View.OnClickListener() {
+        mBdayNotificationTime.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onClick(View view) {
-                String timeString = mBdayNotificationTime.getText().toString();
-                if (timeString.isEmpty()) {
-                    mBdayNotificationTime.setError(getResources().getString(R.string.insert_time));
-                } else {
-                    Integer i = Integer.parseInt(timeString);
-                    if (i>=0 && i<=23) {
-                        sharedPreferences.edit().putInt(CONTACT_ALARM_TIME, i).commit();
-                        sharedPreferences.edit().putBoolean(USE_CONTACTS, mBdayAlerts.isChecked()).commit();
-                        sharedPreferences.edit().putString(MainActivity.RING_TONE, notificationUri.toString()).commit();
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
-                        if (!notificationTime.equals(i)) { // if contact birthday notification time changed, need to update
-                            contactsHelper.updateContactsAlarmTime(getContext());
-                        }
-                        if (mBdayAlerts.isChecked()!=notificationEnabled) { // if birthday notification changed
-                           if (mBdayAlerts.isChecked()) {
-                               int permissionCheck = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_CONTACTS);
-                               if (PackageManager.PERMISSION_GRANTED != permissionCheck) { // and permision NOT granted
-                                   sharedPreferences.edit().putBoolean(USE_CONTACTS, false).commit(); // setup to false because user rejected permission
-                               } else { // update contacts
-                                   contactsHelper.updateContactDatabase(getContext());
-                               }
-                           } else { // remove contacts when disabled
-                               contactsHelper.removeContacts(getContext());
-                           }
-                        }
-                        getActivity().getSupportFragmentManager().popBackStack();
-                    } else {
-                        mBdayNotificationTime.setError(getResources().getString(R.string.insert_time));
-                    }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                String newValue = editable.toString();
+                if (!newValue.isEmpty()) {
+                    sharedPreferences.edit().putString(ContactsHelper.CONTACT_ALARM_TIME, newValue).commit();
+                    contactsHelper.updateContactsAlarmTime(getContext());
                 }
+            }
+        });
+
+        mBdayNotificationTime.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DialogFragment newFragment = new TimePickerFragment();
+                Bundle bundle = new Bundle();
+                bundle.putString(TimePickerFragment.TIME, mBdayNotificationTime.getText().toString());
+                bundle.putInt(TimePickerFragment.TARGET_ID, R.id.defaultContactAlert);
+                newFragment.setArguments(bundle);
+                newFragment.show(getActivity().getSupportFragmentManager(), TimePickerFragment.class.getName());
             }
         });
 
@@ -153,7 +143,8 @@ public class SettingsFragment extends Fragment {
         if (resultCode == getActivity().RESULT_OK && requestCode == 123) {
             Uri uri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
             if (uri != null) {
-                notificationUri = uri;
+                final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getContext());
+                sharedPreferences.edit().putString(MainActivity.RING_TONE, uri.toString()).commit();
             } else {
                 Toast toast = Toast.makeText(getContext(), R.string.invalid_ringtone, Toast.LENGTH_LONG);
                 toast.show();

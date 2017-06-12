@@ -15,14 +15,17 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import sk.filo.tomas.reminder.AlarmReceiver;
-import sk.filo.tomas.reminder.ContactsHelper;
+import sk.filo.tomas.reminder.helper.BirthDayTime;
+import sk.filo.tomas.reminder.receiver.AlarmReceiver;
+import sk.filo.tomas.reminder.helper.ContactsHelper;
 import sk.filo.tomas.reminder.item.AlarmExtendedItem;
 import sk.filo.tomas.reminder.item.AlarmItem;
 import sk.filo.tomas.reminder.item.ContactItem;
@@ -36,9 +39,10 @@ import sk.filo.tomas.reminder.item.ReminderItem;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "reminder.sqlite";
-    private static final int DB_VERSION = 1;
+    private static final int DB_VERSION = 1 ;
     private static String TAG = DatabaseHelper.class.getSimpleName();
     private Context mCtx;
+    private ContactsHelper contactsHelper = new ContactsHelper();
 
     public DatabaseHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -52,6 +56,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 " name TEXT NOT NULL," +
                 " img_url TEXT," +
                 " birthday INTEGER NOT NULL, " +
+                " has_year INTEGER NOT NULL DEFAULT 1, " +
                 " alarm_fk INTEGER NOT NULL," +
                 "FOREIGN KEY(alarm_fk) REFERENCES alarms(id));");
         db.execSQL("CREATE TABLE notes " +
@@ -89,6 +94,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public AlarmItem getEnabledAlarmItem(Long alarmId) {
+        if (alarmId == null) return null;
         AlarmItem ai = null;
         SQLiteDatabase rd = this.getReadableDatabase();
         Cursor alarmCursor = rd.rawQuery(
@@ -238,6 +244,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     oldContact.icon = newContact.icon;
                     oldContact.birthday = newContact.birthday;
                     oldContact.name = newContact.name;
+                    oldContact.hasYear = newContact.hasYear;
                     replaceContact(oldContact);
                     Log.d(TAG, "Updating contact: " + oldContact.toString());
                 }
@@ -263,7 +270,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public void updateContactAlarmDatesAndTimes() {
         List<ContactItem> contactItems = readContacts();
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mCtx);
         SQLiteDatabase wd = this.getWritableDatabase();
         wd.beginTransaction();
         try {
@@ -271,8 +277,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Calendar cal = Calendar.getInstance();
                 Integer year = cal.get(Calendar.YEAR);
                 cal.setTime(contact.birthday);
-                cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(ContactsHelper.CONTACT_ALARM_TIME, ContactsHelper.CONTACT_ALARM_TIME_DEFAULT));
-                cal.set(Calendar.MINUTE, 0);
+
+                BirthDayTime bDayTime = contactsHelper.getBirthDayNotificationTime(mCtx);
+
+                cal.set(Calendar.HOUR_OF_DAY, bDayTime.hours);
+                cal.set(Calendar.MINUTE, bDayTime.minutes);
+                cal.set(Calendar.SECOND, 0);
+                cal.set(Calendar.MILLISECOND, 0);
                 cal.set(Calendar.YEAR, year);
                 ContentValues alarm = new ContentValues();
                 if (contact.alarm_fk != null) {
@@ -285,11 +296,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     if (contact.lastExecuted != null) {
                         alarm.put("last_executed", getDateTime(contact.lastExecuted));
                     } else { // if adding new contact or contact newer execuded before, use actual date to prevent reminder on next device boot or midnight when missed alarms are set again
-                        Calendar yesterday = Calendar.getInstance();
-                        yesterday.set(Calendar.MINUTE, 0);
-                        yesterday.set(Calendar.HOUR_OF_DAY, 0);
-                        yesterday.set(Calendar.MILLISECOND, 0);
-                        alarm.put("last_executed", getDateTime(yesterday.getTime()));
+                        Calendar midnight = Calendar.getInstance();
+                        midnight.set(Calendar.MINUTE, 0);
+                        midnight.set(Calendar.HOUR_OF_DAY, 0);
+                        midnight.set(Calendar.SECOND, 0);
+                        midnight.set(Calendar.MILLISECOND, 0);
+                        alarm.put("last_executed", getDateTime(midnight.getTime()));
                     }
                     wd.replaceOrThrow("alarms", null, alarm);
                 }
@@ -314,13 +326,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         wd.beginTransaction();
         try {
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mCtx);
+            BirthDayTime bDayTime = contactsHelper.getBirthDayNotificationTime(mCtx);
 
             Calendar cal = Calendar.getInstance();
             Integer year = cal.get(Calendar.YEAR);
             cal.setTime(item.birthday);
-            cal.set(Calendar.HOUR_OF_DAY, sharedPreferences.getInt(ContactsHelper.CONTACT_ALARM_TIME, ContactsHelper.CONTACT_ALARM_TIME_DEFAULT));
-            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.HOUR_OF_DAY, bDayTime.hours);
+            cal.set(Calendar.MINUTE, bDayTime.minutes);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
             cal.set(Calendar.YEAR, year);
 
             ContentValues alarm = new ContentValues();
@@ -335,11 +349,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (item.lastExecuted != null) {
                 alarm.put("last_executed", getDateTime(item.lastExecuted));
             } else { // if adding new contact or contact newer execuded before, use actual date to prevent reminder on next device boot or midnight when missed alarms are set again
-                Calendar yesterday = Calendar.getInstance();
-                yesterday.set(Calendar.MINUTE, 0);
-                yesterday.set(Calendar.HOUR_OF_DAY, 0);
-                yesterday.set(Calendar.MILLISECOND, 0);
-                alarm.put("last_executed", getDateTime(yesterday.getTime()));
+                Calendar midnight = Calendar.getInstance();
+                midnight.set(Calendar.MINUTE, 0);
+                midnight.set(Calendar.HOUR_OF_DAY, 0);
+                midnight.set(Calendar.SECOND, 0);
+                midnight.set(Calendar.MILLISECOND, 0);
+                alarm.put("last_executed", getDateTime(midnight.getTime()));
             }
 
             alarm_id = wd.replaceOrThrow("alarms", null, alarm);
@@ -349,6 +364,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             contact.put("name", item.name);
             contact.put("img_url", item.icon);
             contact.put("alarm_fk", alarm_id);
+            contact.put("has_year", item.hasYear);
             contact.put("birthday", getDateTime(item.birthday));
 
             contact_id = wd.replaceOrThrow("contacts", null, contact);
@@ -545,7 +561,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<ContactItem> readContacts() {
         SQLiteDatabase rd = this.getReadableDatabase();
-        Cursor cursor = rd.rawQuery("SELECT contacts.id AS id, name, img_url, alarm_time, alarm_enabled, birthday, alarm_fk, last_executed FROM contacts " +
+        Cursor cursor = rd.rawQuery("SELECT contacts.id AS id, name, img_url, alarm_time, alarm_enabled, birthday, alarm_fk, last_executed, has_year FROM contacts " +
                 "JOIN alarms ON alarms.id = contacts.alarm_fk " +
                 "ORDER BY alarm_time ASC;", null);
         List<ContactItem> contacts = new ArrayList<ContactItem>();
@@ -561,8 +577,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
                 Long alarmFk = cursor.getLong(cursor.getColumnIndexOrThrow("alarm_fk"));
                 Boolean alarmEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_enabled")) == 0 ? false : true;
+                Boolean hasYear = cursor.getInt(cursor.getColumnIndexOrThrow("has_year")) == 0 ? false : true;
 
-                contacts.add(new ContactItem(id, alarmFk, name, img_url, getDateTime(birthday), getDateTime(alarmDate), alarmEnabled, getDateTime(lastExecuted)));
+                contacts.add(new ContactItem(id, alarmFk, name, img_url, getDateTime(birthday), getDateTime(alarmDate), alarmEnabled, getDateTime(lastExecuted), hasYear));
             }
         } catch (IllegalArgumentException iae) {
             Log.d(TAG, "Cannot read ContactItem from database, " + iae.getMessage());

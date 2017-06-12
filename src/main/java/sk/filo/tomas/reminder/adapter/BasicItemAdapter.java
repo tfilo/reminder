@@ -145,11 +145,13 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
                 sb.append(day);
                 sb.append(".");
                 sb.append(month);
-                sb.append(" (");
-                sb.append(actualYear - year);
-                sb.append(" ");
-                sb.append(mCtx.getResources().getString(R.string.years));
-                sb.append(")");
+                if (contactItem.hasYear) {
+                    sb.append(" (");
+                    sb.append(actualYear - year);
+                    sb.append(" ");
+                    sb.append(mCtx.getResources().getString(R.string.years));
+                    sb.append(")");
+                }
                 birthday.setText(sb.toString());
 
                 Calendar birthdayCal = Calendar.getInstance();

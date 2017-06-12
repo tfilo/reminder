@@ -1,4 +1,4 @@
-package sk.filo.tomas.reminder;
+package sk.filo.tomas.reminder.receiver;
 
 import android.Manifest;
 import android.app.AlarmManager;
@@ -17,6 +17,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import sk.filo.tomas.reminder.helper.ContactsHelper;
+import sk.filo.tomas.reminder.MainActivity;
 import sk.filo.tomas.reminder.dao.DatabaseHelper;
 import sk.filo.tomas.reminder.item.AlarmItem;
 

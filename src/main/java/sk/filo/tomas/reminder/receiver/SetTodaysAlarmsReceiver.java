@@ -53,7 +53,7 @@ public class SetTodaysAlarmsReceiver extends BroadcastReceiver {
             if (cal.get(Calendar.YEAR) > sharedPreferences.getInt(MainActivity.LAST_YEAR, 2000)) {
                 Log.d(TAG, "Contact birthday update for new year");
                 DatabaseHelper dbH = new DatabaseHelper(context);
-                dbH.updateContactAlarmDatesAndTimes();
+                dbH.updateContactAlarmsTime();
                 sharedPreferences.edit().putInt(MainActivity.LAST_YEAR, cal.get(Calendar.YEAR)).commit();
             }
 

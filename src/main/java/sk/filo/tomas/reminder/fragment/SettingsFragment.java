@@ -34,6 +34,7 @@ public class SettingsFragment extends Fragment {
 
     private static String TAG = "SettingsFragment";
 
+    private Switch mSounds;
     private Switch mBdayAlerts;
     private EditText mBdayNotificationTime;
     private Button mChooseNotification;
@@ -49,14 +50,19 @@ public class SettingsFragment extends Fragment {
         View w = inflater.inflate(R.layout.fragment_settings, container, false);
 
         mBdayAlerts = (Switch) w.findViewById(R.id.use_contacts);
+        mSounds = (Switch) w.findViewById(R.id.use_sound);
         mBdayNotificationTime = (EditText) w.findViewById(R.id.defaultContactAlert);
         mChooseNotification = (Button) w.findViewById(R.id.ringtone_picker);
 
         final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getContext());
 
         mBdayAlerts.setChecked(sharedPreferences.getBoolean(MainActivity.USE_CONTACTS, true));
-
+        mSounds.setChecked(sharedPreferences.getBoolean(MainActivity.USE_SOUND, true));
         mBdayNotificationTime.setText(sharedPreferences.getString(ContactsUtil.CONTACT_ALARM_TIME,"10:00"));
+
+        if (!mSounds.isChecked()) {
+            mChooseNotification.setEnabled(false);
+        }
 
         mChooseNotification.setOnClickListener(new View.OnClickListener()
         {
@@ -92,6 +98,19 @@ public class SettingsFragment extends Fragment {
             }
         });
 
+        mSounds.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mSounds.isChecked()) {
+                    sharedPreferences.edit().putBoolean(MainActivity.USE_SOUND, true).commit();
+                    mChooseNotification.setEnabled(true);
+                } else {
+                    sharedPreferences.edit().putBoolean(MainActivity.USE_SOUND, false).commit();
+                    mChooseNotification.setEnabled(false);
+                }
+            }
+        });
+
         mBdayNotificationTime.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -105,7 +124,6 @@ public class SettingsFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable editable) {
-                Calendar cal = Calendar.getInstance();
                 String newValue = editable.toString();
                 if (!newValue.isEmpty()) {
                     sharedPreferences.edit().putString(ContactsUtil.CONTACT_ALARM_TIME, newValue).commit();

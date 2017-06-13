@@ -48,6 +48,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+
         db.execSQL("CREATE TABLE contacts " +
                 "(id INTEGER PRIMARY KEY," +
                 " name TEXT NOT NULL," +
@@ -56,10 +57,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 " has_year INTEGER NOT NULL DEFAULT 1, " +
                 " alarm_fk INTEGER NOT NULL," +
                 "FOREIGN KEY(alarm_fk) REFERENCES alarms(id));");
+
         db.execSQL("CREATE TABLE notes " +
                 "(id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 " name TEXT," +
                 " description TEXT);");
+
         db.execSQL("CREATE TABLE reminders " +
                 "(id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 " name TEXT," +
@@ -69,10 +72,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         db.execSQL("CREATE TABLE alarms " +
                 "(id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                " alarm_time INTEGER NOT NULL, " +
-                " every_year INTEGER NOT NULL DEFAULT 0," +
+                " hour INTEGER, " + // used only when reminder
+                " minute INTEGER, " + // used only when reminder
+                " day INTEGER NOT NULL, " +
+                " month INTEGER NOT NULL, " +
+                " year INTEGER, " + // used only when reminder
                 " alarm_enabled INTEGER NOT NULL DEFAULT 1," +
-                " last_executed INTEGER);");
+                " last_executed INTEGER);"); // only year
     }
 
     @Override
@@ -85,16 +91,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         AlarmItem ai = null;
         SQLiteDatabase rd = this.getReadableDatabase();
         Cursor alarmCursor = rd.rawQuery(
-                "SELECT id, alarm_time, last_executed FROM alarms " +
+                "SELECT id, hour, minute, day, month, year, last_executed FROM alarms " +
                         "WHERE id = ? AND alarm_enabled = 1",
                 new String[]{alarmId.toString()}
         );
         try {
             if (alarmCursor.moveToNext()) {
                 Long id = alarmCursor.getLong(alarmCursor.getColumnIndexOrThrow("id"));
-                Integer alarmDate = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("alarm_time"));
+                Integer hour = null;
+                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("hour"))) {
+                    hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
+                }
+                Integer minute = null;
+                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("minute"))) {
+                    minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
+                }
+                Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
+                Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
+                Integer year = null;
+                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("year"))) {
+                    year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
+                }
                 Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
-                ai = new AlarmItem(id, DateTimeUtil.getDateTime(alarmDate), DateTimeUtil.getDateTime(lastExecuted));
+
+                if (hour==null && minute==null) { // when time not specified use time from settings
+                    BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
+                    hour = birthDayNotificationTime.hours;
+                    minute = birthDayNotificationTime.minutes;
+                    Log.d(TAG, "Time is updated by default to " + hour + ":" + minute);
+                } else {
+                    Log.d(TAG, "Time is " + hour + ":" + minute);
+                }
+                Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
+                ai = new AlarmItem(id, alarmTime, lastExecuted);
             }
         } catch (IllegalArgumentException iae) {
             Log.d(TAG, "Cannot read AlarmItem from database, " + iae.getMessage());
@@ -112,16 +141,36 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             AlarmItem alarmItem = null;
             Cursor alarmCursor = rd.rawQuery(
-                    "SELECT id, alarm_time, last_executed FROM alarms " +
+                    "SELECT id, hour, minute, day, month, year, last_executed FROM alarms " +
                             "WHERE id = ? AND alarm_enabled = 1",
                     new String[]{alarmid.toString()}
             );
             try {
                 if (alarmCursor.moveToNext()) {
                     Long id = alarmCursor.getLong(alarmCursor.getColumnIndexOrThrow("id"));
-                    Integer alarmDate = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("alarm_time"));
+                    Integer hour = null;
+                    if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("hour"))) {
+                        hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
+                    }
+                    Integer minute = null;
+                    if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("minute"))) {
+                        minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
+                    }
+                    Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
+                    Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
+                    Integer year = null;
+                    if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("year"))) {
+                        year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
+                    }
                     Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
-                    alarmItem = new AlarmItem(id, DateTimeUtil.getDateTime(alarmDate), DateTimeUtil.getDateTime(lastExecuted));
+
+                    if (hour==null && minute==null) { // when time not specified use time from settings
+                        BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
+                        hour = birthDayNotificationTime.hours;
+                        minute = birthDayNotificationTime.minutes;
+                    }
+                    Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
+                    alarmItem = new AlarmItem(id, alarmTime, lastExecuted);
                 }
             } catch (IllegalArgumentException iae) {
                 Log.d(TAG, "Cannot read AlarmItem from database, " + iae.getMessage());
@@ -158,34 +207,57 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public List<AlarmItem> getAlarmsToSetup() {
+        Log.d(TAG, "getAlarmsToSetup");
         List<AlarmItem> aiList = new ArrayList<AlarmItem>();
 
         SQLiteDatabase rd = this.getReadableDatabase();
 
         Calendar nextMidnight = DateTimeUtil.getNextMidnight();
 
+        Calendar lastMidnight = DateTimeUtil.getLastMidnight();
+
         Calendar monthBefore = Calendar.getInstance();
         monthBefore.setTime(nextMidnight.getTime());
         monthBefore.set(Calendar.MONTH, nextMidnight.get(Calendar.MONTH) - 1);
 
         String[] args = new String[]{
-                String.valueOf(new Long(nextMidnight.getTimeInMillis() / 1000).intValue()),
-                String.valueOf(new Long(monthBefore.getTimeInMillis() / 1000).intValue())
+                String.valueOf(lastMidnight.get(Calendar.YEAR)),
+                String.valueOf(lastMidnight.get(Calendar.YEAR)),
+                String.valueOf(monthBefore.get(Calendar.YEAR)),
+                String.valueOf(lastMidnight.get(Calendar.MONTH)),
+                String.valueOf(lastMidnight.get(Calendar.DAY_OF_MONTH)),
+                String.valueOf(monthBefore.get(Calendar.MONTH)),
+                String.valueOf(monthBefore.get(Calendar.DAY_OF_MONTH))
         };
         Cursor alarmCursor = rd.rawQuery(
-                "SELECT id, alarm_time, last_executed FROM alarms " +
+                "SELECT id, hour, minute, day, month, year, last_executed FROM alarms " +
                         "WHERE alarm_enabled=1 " +
-                        "AND (last_executed IS NULL OR last_executed < alarm_time) " +
-                        "AND alarm_time < ? " +
-                        "AND alarm_time > ?",
+                        "AND (last_executed IS NULL OR last_executed < ?) " + // only not executed now
+                        "AND (year IS NULL OR year = ? OR year = ? ) " + // valid only this year or year before (if month before is in last year)
+                        "AND ((month = ? AND day <= ?) OR (month = ? AND day >= ?)) " + // valid only this month or month before
+                        "ORDER BY year, month, day, hour, minute",
                 args
         );
         try {
             while (alarmCursor.moveToNext()) {
                 Long id = alarmCursor.getLong(alarmCursor.getColumnIndexOrThrow("id"));
-                Integer alarmDate = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("alarm_time"));
+
+                Integer hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
+                Integer minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
+                Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
+                Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
+                Integer year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
                 Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
-                AlarmItem ai = new AlarmItem(id, DateTimeUtil.getDateTime(alarmDate), DateTimeUtil.getDateTime(lastExecuted));
+
+                if (hour==null && minute==null) { // when time not specified use time from settings
+                    BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
+                    hour = birthDayNotificationTime.hours;
+                    minute = birthDayNotificationTime.minutes;
+                }
+                Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
+
+                AlarmItem ai = new AlarmItem(id, alarmTime, lastExecuted);
+                Log.d(TAG, "SETUJEM ALARM: " + ai.toString());
                 aiList.add(ai);
             }
         } catch (IllegalArgumentException iae) {
@@ -227,6 +299,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     oldContact.birthday = newContact.birthday;
                     oldContact.name = newContact.name;
                     oldContact.hasYear = newContact.hasYear;
+                    oldContact.lastExecuted = null;
                     replaceContact(oldContact);
                     Log.d(TAG, "Updating contact: " + oldContact.toString());
                 }
@@ -250,46 +323,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public void updateContactAlarmDatesAndTimes() {
+    public void updateContactAlarmsTime() {
         List<ContactItem> contactItems = readContacts();
-        SQLiteDatabase wd = this.getWritableDatabase();
-        wd.beginTransaction();
-        try {
-            for (ContactItem contact : contactItems) {
-                BirthDayTime bDayTime = contactsUtil.getBirthDayNotificationTime(mCtx);
-                Calendar cal = Calendar.getInstance();
-                Integer year = cal.get(Calendar.YEAR);
-                cal.setTime(contact.birthday);
-                cal.set(Calendar.HOUR_OF_DAY, bDayTime.hours);
-                cal.set(Calendar.MINUTE, bDayTime.minutes);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-                cal.set(Calendar.YEAR, year);
-                ContentValues alarm = new ContentValues();
-                if (contact.alarm_fk != null) {
-                    alarm.put("id", contact.alarm_fk);
-                    alarm.put("alarm_time", DateTimeUtil.getDateTime(cal.getTime()));
-                    alarm.put("every_year", true);
-                    if (contact.alarmEnabled != null) {
-                        alarm.put("alarm_enabled", contact.alarmEnabled);
-                    }
-                    if (contact.lastExecuted != null) {
-                        alarm.put("last_executed", DateTimeUtil.getDateTime(contact.lastExecuted));
-                    } else { // if adding new contact or contact newer execuded before, use actual date to prevent reminder on next device boot or midnight when missed alarms are set again
-                        Calendar lastMidnight = DateTimeUtil.getLastMidnight();
-                        alarm.put("last_executed", DateTimeUtil.getDateTime(lastMidnight.getTime()));
-                    }
-                    wd.replaceOrThrow("alarms", null, alarm);
-                }
-            }
-            wd.setTransactionSuccessful();
-        } catch (SQLException sqlE) {
-            Log.d(TAG, "Cannot write Alarm to database, " + sqlE.getMessage());
-        } finally {
-            wd.endTransaction();
-            wd.close();
-        }
-
         for (ContactItem contact : contactItems) {
             addUpdateOrRemoveAlarm(contact.alarm_fk); // update every setted alarm
         }
@@ -304,33 +339,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             BirthDayTime bDayTime = contactsUtil.getBirthDayNotificationTime(mCtx);
 
-            Calendar cal = Calendar.getInstance();
-            Integer year = cal.get(Calendar.YEAR);
-            cal.setTime(item.birthday);
-            cal.set(Calendar.HOUR_OF_DAY, bDayTime.hours);
-            cal.set(Calendar.MINUTE, bDayTime.minutes);
-            cal.set(Calendar.SECOND, 0);
-            cal.set(Calendar.MILLISECOND, 0);
-            cal.set(Calendar.YEAR, year);
+            Calendar alarmTime = Calendar.getInstance();
+            alarmTime.setTime(item.alarmTime);
 
             ContentValues alarm = new ContentValues();
             if (item.alarm_fk != null) {
                 alarm.put("id", item.alarm_fk);
             }
-            alarm.put("alarm_time", DateTimeUtil.getDateTime(cal.getTime()));
-            alarm.put("every_year", true);
+
+            alarm.put("day", alarmTime.get(Calendar.DAY_OF_MONTH));
+            alarm.put("month", alarmTime.get(Calendar.MONTH));
+            alarm.putNull("hour");
+            alarm.putNull("minute");
+            alarm.putNull("year");
+
             if (item.alarmEnabled != null) {
                 alarm.put("alarm_enabled", item.alarmEnabled);
             }
             if (item.lastExecuted != null) {
-                alarm.put("last_executed", DateTimeUtil.getDateTime(item.lastExecuted));
+                alarm.put("last_executed", item.lastExecuted);
             } else { // if adding new contact or contact newer execuded before, use actual date to prevent reminder on next device boot or midnight when missed alarms are set again
-                Calendar LastMidnight = DateTimeUtil.getLastMidnight();
-                alarm.put("last_executed", DateTimeUtil.getDateTime(LastMidnight.getTime()));
+                Calendar now = Calendar.getInstance();
+                if (alarmTime.after(now)) {
+                    alarm.put("last_executed", now.get(Calendar.YEAR) - 1);
+                } else {
+                    alarm.put("last_executed", now.get(Calendar.YEAR));
+                }
             }
-
             alarm_id = wd.replaceOrThrow("alarms", null, alarm);
-
             ContentValues contact = new ContentValues();
             contact.put("id", item.id);
             contact.put("name", item.name);
@@ -361,19 +397,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         wd.beginTransaction();
         try {
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(item.notificationTime);
+            Calendar notification = Calendar.getInstance();
+            notification.setTime(item.notificationTime);
 
             ContentValues alarm = new ContentValues();
             if (item.alarm_fk != null) {
                 alarm.put("id", item.alarm_fk);
             }
-            alarm.put("alarm_time", DateTimeUtil.getDateTime(cal.getTime()));
+            alarm.put("day", notification.get(Calendar.DAY_OF_MONTH));
+            alarm.put("month", notification.get(Calendar.MONTH));
+            alarm.put("hour", notification.get(Calendar.HOUR_OF_DAY));
+            alarm.put("minute", notification.get(Calendar.MINUTE));
+            alarm.put("year", notification.get(Calendar.YEAR));
             if (item.alarmEnabled != null) {
                 alarm.put("alarm_enabled", item.alarmEnabled);
             }
             if (item.lastExecuted != null) {
-                alarm.put("last_executed", DateTimeUtil.getDateTime(item.lastExecuted));
+                alarm.put("last_executed", item.lastExecuted);
             }
 
             alarm_id = wd.replaceOrThrow("alarms", null, alarm);
@@ -427,20 +467,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<ReminderItem> readReminders() {
         SQLiteDatabase rd = this.getReadableDatabase();
-        Cursor cursor = rd.rawQuery("SELECT reminders.id AS id, name, description, alarm_time, alarm_enabled, alarm_fk, last_executed FROM reminders " +
+        Cursor cursor = rd.rawQuery("SELECT reminders.id AS id, name, description, hour, minute, day, month, year, alarm_enabled, alarm_fk, last_executed FROM reminders " +
                 "JOIN alarms ON alarms.id = reminders.alarm_fk " +
-                "ORDER BY alarm_time ASC;", null);
+                "ORDER BY year, month, month, day, hour, minute ASC;", null);
         List<ReminderItem> reminders = new ArrayList<ReminderItem>();
         try {
             while (cursor.moveToNext()) {
                 Long id = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
                 String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
                 String description = cursor.getString(cursor.getColumnIndexOrThrow("description"));
-                Integer alarmDate = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_time"));
+                Integer hour = cursor.getInt(cursor.getColumnIndexOrThrow("hour"));
+                Integer minute = cursor.getInt(cursor.getColumnIndexOrThrow("minute"));
+                Integer day = cursor.getInt(cursor.getColumnIndexOrThrow("day"));
+                Integer month = cursor.getInt(cursor.getColumnIndexOrThrow("month"));
+                Integer year = cursor.getInt(cursor.getColumnIndexOrThrow("year"));
                 Integer lastExecuted = cursor.getInt(cursor.getColumnIndexOrThrow("last_executed"));
                 Long alarmFk = cursor.getLong(cursor.getColumnIndexOrThrow("alarm_fk"));
                 Boolean alarmEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_enabled")) == 0 ? false : true;
-                reminders.add(new ReminderItem(id, alarmFk, name, description, DateTimeUtil.getDateTime(alarmDate), alarmEnabled, DateTimeUtil.getDateTime(lastExecuted)));
+
+                Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
+
+                reminders.add(new ReminderItem(id, alarmFk, name, description, alarmTime, alarmEnabled, lastExecuted));
             }
         } catch (IllegalArgumentException iae) {
             Log.d(TAG, "Cannot read ReminderItems from database, " + iae.getMessage());
@@ -455,7 +502,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public ReminderItem readReminder(Long recId) {
         SQLiteDatabase rd = this.getReadableDatabase();
         Cursor cursor = rd.rawQuery(
-                "SELECT reminders.id AS id, name, description, alarm_time, alarm_enabled, alarm_fk, last_executed FROM reminders " +
+                "SELECT reminders.id AS id, name, description, hour, minute, day, month, year, alarm_enabled, alarm_fk, last_executed FROM reminders " +
                         "JOIN alarms ON alarms.id = reminders.alarm_fk " +
                         "WHERE reminders.id=? ",
                 new String[]{recId.toString()}
@@ -467,11 +514,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Long id = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
                 String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
                 String description = cursor.getString(cursor.getColumnIndexOrThrow("description"));
-                Integer alarmDate = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_time"));
+                Integer hour = cursor.getInt(cursor.getColumnIndexOrThrow("hour"));
+                Integer minute = cursor.getInt(cursor.getColumnIndexOrThrow("minute"));
+                Integer day = cursor.getInt(cursor.getColumnIndexOrThrow("day"));
+                Integer month = cursor.getInt(cursor.getColumnIndexOrThrow("month"));
+                Integer year = cursor.getInt(cursor.getColumnIndexOrThrow("year"));
                 Integer lastExecuted = cursor.getInt(cursor.getColumnIndexOrThrow("last_executed"));
                 Long alarmFk = cursor.getLong(cursor.getColumnIndexOrThrow("alarm_fk"));
                 Boolean alarmEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_enabled")) == 0 ? false : true;
-                reminder = new ReminderItem(id, alarmFk, name, description, DateTimeUtil.getDateTime(alarmDate), alarmEnabled, DateTimeUtil.getDateTime(lastExecuted));
+
+                Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
+                reminder = new ReminderItem(id, alarmFk, name, description, alarmTime, alarmEnabled, lastExecuted);
             }
         } catch (IllegalArgumentException iae) {
             Log.d(TAG, "Cannot read ReminderItem from database, " + iae.getMessage());
@@ -533,25 +586,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<ContactItem> readContacts() {
         SQLiteDatabase rd = this.getReadableDatabase();
-        Cursor cursor = rd.rawQuery("SELECT contacts.id AS id, name, img_url, alarm_time, alarm_enabled, birthday, alarm_fk, last_executed, has_year FROM contacts " +
+        Cursor cursor = rd.rawQuery("SELECT contacts.id AS id, name, img_url, day, month, alarm_enabled, birthday, alarm_fk, last_executed, has_year FROM contacts " +
                 "JOIN alarms ON alarms.id = contacts.alarm_fk " +
-                "ORDER BY alarm_time ASC;", null);
+                "ORDER BY year, month, month, day, hour, minute ASC;", null);
         List<ContactItem> contacts = new ArrayList<ContactItem>();
         try {
             while (cursor.moveToNext()) {
                 Long id = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
                 String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
                 String img_url = cursor.getString(cursor.getColumnIndexOrThrow("img_url"));
-
                 Integer birthday = cursor.getInt(cursor.getColumnIndexOrThrow("birthday"));
-                Integer alarmDate = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_time"));
+                Integer day = cursor.getInt(cursor.getColumnIndexOrThrow("day"));
+                Integer month = cursor.getInt(cursor.getColumnIndexOrThrow("month"));
                 Integer lastExecuted = cursor.getInt(cursor.getColumnIndexOrThrow("last_executed"));
-
                 Long alarmFk = cursor.getLong(cursor.getColumnIndexOrThrow("alarm_fk"));
                 Boolean alarmEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_enabled")) == 0 ? false : true;
                 Boolean hasYear = cursor.getInt(cursor.getColumnIndexOrThrow("has_year")) == 0 ? false : true;
 
-                contacts.add(new ContactItem(id, alarmFk, name, img_url, DateTimeUtil.getDateTime(birthday), DateTimeUtil.getDateTime(alarmDate), alarmEnabled, DateTimeUtil.getDateTime(lastExecuted), hasYear));
+                BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
+                Integer hour = birthDayNotificationTime.hours;
+                Integer minute = birthDayNotificationTime.minutes;
+
+                Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, null);
+                contacts.add(new ContactItem(id, alarmFk, name, img_url, DateTimeUtil.getDateTime(birthday), alarmTime, alarmEnabled, lastExecuted, hasYear));
             }
         } catch (IllegalArgumentException iae) {
             Log.d(TAG, "Cannot read ContactItem from database, " + iae.getMessage());
@@ -611,6 +668,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 }
                 Log.d(TAG, "Alarm with id " + id + " updated");
             }
+            Log.d(TAG, "Alarm with id " + id + " NOT UPDATED: " + ai.toString());
         }
     }
 
@@ -619,7 +677,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         wd.beginTransaction();
         try {
             ContentValues content = new ContentValues();
-            content.put("last_executed", DateTimeUtil.getDateTime(alarmTime));
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(alarmTime);
+            content.put("last_executed", cal.get(Calendar.YEAR));
             String where = "id=?";
             String[] args = new String[]{id.toString()};
             wd.update("alarms", content, where, args);

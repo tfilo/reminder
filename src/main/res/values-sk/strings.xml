@@ -16,8 +16,12 @@
     <string name="has_birthday">má narodeniny</string>
     <string name="date_time_before">Nedá sa nastaviť alarm v minulosti</string>
     <string name="default_time_notification">Čas upozornenia narodenín</string>
-    <string name="ringtone_picker">Vyberte zvuk notifikácie</string>
+    <string name="ringtone_picker">Výbrať zvuk</string>
     <string name="save">Uložiť nastavenia</string>
     <string name="birthday_alerts">Povoliť upozornenia narodenín</string>
     <string name="invalid_ringtone">Neplatné zvonenie</string>
+    <string name="notification_sound">Zvuk notifikácie</string>
+    <string name="call">Volať</string>
+    <string name="message">Poslať SMS</string>
+    <string name="happy_birthday">Prajem všetko najlepšie k narodeninám!</string>
 </resources>

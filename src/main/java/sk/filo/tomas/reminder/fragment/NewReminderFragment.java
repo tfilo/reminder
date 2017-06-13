@@ -142,6 +142,7 @@ public class NewReminderFragment extends Fragment {
                         alarmTime,
                         mAlarmEnabled.isChecked(),
                         null);
+                ri.lastExecuted = null;
                 Log.d(TAG, ri.toString());
                 mDbH.replaceReminder(ri);
 

@@ -11,9 +11,9 @@ public class ReminderItem extends BasicItem {
     public String description;
     public Date notificationTime;
     public Boolean alarmEnabled;
-    public Date lastExecuted;
+    public Integer lastExecuted;
 
-    public ReminderItem(Long id, Long alarmFk, String name, String description, Date notificationTime, Boolean alarmEnabled, Date lastExecuted) {
+    public ReminderItem(Long id, Long alarmFk, String name, String description, Date notificationTime, Boolean alarmEnabled, Integer lastExecuted) {
         super(id, alarmFk, name);
         this.description = description;
         this.notificationTime = notificationTime;
@@ -22,7 +22,8 @@ public class ReminderItem extends BasicItem {
     }
 
     public boolean executedThisYear() {
-        if (lastExecuted!=null && lastExecuted.getTime() >= notificationTime.getTime()) {
+        Calendar cal = Calendar.getInstance();
+        if (lastExecuted!=null && lastExecuted >= cal.get(Calendar.YEAR)) {
             return true;
         }
         return false;

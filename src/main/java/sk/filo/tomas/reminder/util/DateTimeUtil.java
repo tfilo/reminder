@@ -64,4 +64,20 @@ public class DateTimeUtil {
         }
         return date;
     }
+
+    public static Date getDateFromSeparateFields(Integer hour, Integer minute, Integer day, Integer month, Integer year) {
+        Calendar cal = getLastMidnight();
+        if (hour!=null && minute!=null) {
+            cal.set(Calendar.HOUR_OF_DAY, hour);
+            cal.set(Calendar.MINUTE, minute);
+        }
+        if (day!=null && month!=null) {
+            cal.set(Calendar.DAY_OF_MONTH, day);
+            cal.set(Calendar.MONTH, month);
+        }
+        if (year!=null) {
+            cal.set(Calendar.YEAR, year);
+        }
+        return cal.getTime();
+    }
 }

@@ -11,9 +11,9 @@ public class AlarmItem {
 
     public Long id;
     public Date alarmTime;
-    public Date lastExecuted;
+    public Integer lastExecuted;
 
-    public AlarmItem(Long id, Date alarmTime, Date lastExecuted) {
+    public AlarmItem(Long id, Date alarmTime, Integer lastExecuted) {
         this.id = id;
         this.alarmTime = alarmTime;
         this.lastExecuted = lastExecuted;

@@ -114,7 +114,7 @@ public class ContactsUtil {
 
     public void updateContactsAlarmTime(Context context) {
         DatabaseHelper dbH = new DatabaseHelper(context);
-        dbH.updateContactAlarmDatesAndTimes();
+        dbH.updateContactAlarmsTime();
     }
 
     public BirthDayTime getBirthDayNotificationTime(Context context) {

@@ -14,10 +14,10 @@ public class ContactItem extends BasicItem {
     public Date birthday;
     public Date alarmTime;
     public Boolean alarmEnabled;
-    public Date lastExecuted;
+    public Integer lastExecuted;
     public Boolean hasYear;
 
-    public ContactItem(Long id, Long alarmFk, String name, String icon, Date birthday, Date alarmTime, Boolean alarmEnabled, Date lastExecuted, Boolean hasYear) {
+    public ContactItem(Long id, Long alarmFk, String name, String icon, Date birthday, Date alarmTime, Boolean alarmEnabled, Integer lastExecuted, Boolean hasYear) {
         super(id, alarmFk, name);
         this.icon = icon;
         this.birthday = birthday;
@@ -30,12 +30,7 @@ public class ContactItem extends BasicItem {
     public boolean executedThisYear() {
         Calendar cal = Calendar.getInstance();
         Integer year = cal.get(Calendar.YEAR);
-
-        Calendar birthdayThisYear = Calendar.getInstance();
-        birthdayThisYear.setTime(birthday);
-        birthdayThisYear.set(Calendar.YEAR,year);
-
-        if (lastExecuted!=null && lastExecuted.getTime() >= birthdayThisYear.getTime().getTime()) {
+        if (lastExecuted!=null && lastExecuted >= year) {
             return true;
         }
         return false;

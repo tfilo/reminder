@@ -24,6 +24,8 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import java.util.Calendar;
+
 import sk.filo.tomas.reminder.util.ContactsUtil;
 import sk.filo.tomas.reminder.MainActivity;
 import sk.filo.tomas.reminder.R;
@@ -103,6 +105,7 @@ public class SettingsFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable editable) {
+                Calendar cal = Calendar.getInstance();
                 String newValue = editable.toString();
                 if (!newValue.isEmpty()) {
                     sharedPreferences.edit().putString(ContactsUtil.CONTACT_ALARM_TIME, newValue).commit();

@@ -8,7 +8,7 @@ public class BirthDayTime {
     public int minutes;
     public int hours;
 
-    public BirthDayTime(int minutes, int hours) {
+    public BirthDayTime(int hours, int minutes) {
         this.minutes = minutes;
         this.hours = hours;
     }

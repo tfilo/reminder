@@ -156,9 +156,10 @@ public class BasicItemAdapter extends RecyclerView.Adapter<BasicItemAdapter.Basi
 
                 Calendar birthdayCal = Calendar.getInstance();
                 birthdayCal.setTime(contactItem.birthday);
-
+                
                 Calendar actualDay = Calendar.getInstance();
-
+                birthdayCal.set(Calendar.YEAR, actualDay.get(Calendar.YEAR));
+                
                 if (birthdayCal.get(Calendar.DAY_OF_YEAR) < actualDay.get(Calendar.DAY_OF_YEAR)) {
                     name.setEnabled(false);
                     birthday.setEnabled(false);

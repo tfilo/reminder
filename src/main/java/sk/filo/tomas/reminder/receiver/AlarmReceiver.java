@@ -66,7 +66,6 @@ public class AlarmReceiver extends BroadcastReceiver {
                                     .setAutoCancel(true)
                                     .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-
                             String number = getContactNumberById(context, aei.parentId);
 
                             if (number!=null && !number.isEmpty()) {
@@ -74,12 +73,12 @@ public class AlarmReceiver extends BroadcastReceiver {
                                 PendingIntent pendingDial = PendingIntent.getActivity(context, aei.id.intValue(),
                                         dial, PendingIntent.FLAG_UPDATE_CURRENT);
 
-                                Intent send = new Intent(Intent.ACTION_MAIN);
+                                Intent send = new Intent(Intent.ACTION_SENDTO);
+                                send.setData(Uri.parse("smsto:" + Uri.encode(number)));
                                 send.putExtra("sms_body", context.getResources().getString(R.string.happy_birthday));
-                                send.putExtra("address", number);
-                                send.setType("vnd.android-dir/mms-sms");
+
                                 PendingIntent sendSms = PendingIntent.getActivity(context, Integer.MAX_VALUE - aei.id.intValue(),
-                                        dial, PendingIntent.FLAG_UPDATE_CURRENT);
+                                        send, PendingIntent.FLAG_UPDATE_CURRENT);
 
                                 builder.addAction(R.drawable.ic_phone_white_18dp, context.getResources().getString(R.string.call), pendingDial)
                                         .addAction(R.drawable.ic_message_white_18dp, context.getResources().getString(R.string.message), sendSms);
@@ -112,15 +111,10 @@ public class AlarmReceiver extends BroadcastReceiver {
                             break;
                     }
 
-                    if (Build.VERSION.SDK_INT >= 16) {
-                        Notification notif = builder.build();
-                        notif.flags |= Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
-                        mNotificationManager.notify(aei.id.intValue(), notif);
-                    } else {
-                        Notification notif = builder.getNotification();
-                        notif.flags |= Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
-                        mNotificationManager.notify(aei.id.intValue(), notif);
-                    }
+                    Notification notif = builder.build();
+                    notif.flags |= Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
+                    mNotificationManager.notify(aei.id.intValue(), notif);
+
                     dbH.updateLastExecuted(id, aei.alarmTime);
                 }
             }

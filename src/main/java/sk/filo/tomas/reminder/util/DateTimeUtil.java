@@ -52,7 +52,7 @@ public class DateTimeUtil {
     }
 
     public static Date parseTime(String time) {
-        SimpleDateFormat[] formats = { new SimpleDateFormat("HH:mm"), new SimpleDateFormat("hh:mm a") };
+        SimpleDateFormat[] formats = { new SimpleDateFormat("hh:mm a"), new SimpleDateFormat("HH:mm") };
         Date date = null;
         for (SimpleDateFormat sdf : formats) {
             try {

@@ -9,13 +9,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
+
+import java.util.Date;
 
 import sk.filo.tomas.reminder.MainActivity;
 import sk.filo.tomas.reminder.R;
@@ -54,7 +55,6 @@ public class AlarmReceiver extends BroadcastReceiver {
                     final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
                     Uri alarmSound = Uri.parse(sharedPreferences.getString(MainActivity.RING_TONE, ""));
                     Boolean sound = sharedPreferences.getBoolean(MainActivity.USE_SOUND, true);
-
                     switch (aei.type) {
                         case CONTACT:
                             builder.setSmallIcon(R.drawable.ic_redeem_white_24dp)
@@ -63,7 +63,8 @@ public class AlarmReceiver extends BroadcastReceiver {
                                     .setContentTitle(context.getString(R.string.birthday))
                                     .setContentText(aei.name + " " + context.getString(R.string.has_birthday))
                                     .setAutoCancel(true)
-                                    .setPriority(NotificationCompat.PRIORITY_HIGH).setCategory(Notification.CATEGORY_EVENT);
+                                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                                    .setCategory(Notification.CATEGORY_EVENT);
 
                             String number = getContactNumberById(context, aei.parentId);
 
@@ -80,7 +81,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                                         send, PendingIntent.FLAG_UPDATE_CURRENT);
 
                                 builder.addAction(R.drawable.ic_phone_white_18dp, context.getResources().getString(R.string.call), pendingDial)
-                                        .addAction(R.drawable.ic_message_white_18dp, context.getResources().getString(R.string.message), sendSms);
+                                       .addAction(R.drawable.ic_message_white_18dp, context.getResources().getString(R.string.message), sendSms);
                             }
 
                             if (sound) {
@@ -102,7 +103,8 @@ public class AlarmReceiver extends BroadcastReceiver {
                                     .setContentText(aei.description)
                                     .setAutoCancel(true)
                                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                    .setContentIntent(pendingIntent).setCategory(Notification.CATEGORY_REMINDER);
+                                    .setContentIntent(pendingIntent)
+                                    .setCategory(Notification.CATEGORY_REMINDER);
 
                             if (sound) {
                                 builder.setSound(alarmSound);
@@ -110,11 +112,9 @@ public class AlarmReceiver extends BroadcastReceiver {
                             dbH.enableDisableAlarm(id, false);
                             break;
                     }
-
                     Notification notif = builder.build();
                     notif.flags |= Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
                     mNotificationManager.notify(aei.id.intValue(), notif);
-
                     dbH.updateLastExecuted(id, aei.alarmTime);
                 }
             }

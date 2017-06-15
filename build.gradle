@@ -18,6 +18,38 @@ android {
         }
     }
     productFlavors {
+        nexus7 {
+            minSdkVersion 19
+            applicationId 'sk.filo.tomas.reminder'
+            targetSdkVersion 25
+            testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+            versionCode 1
+            versionName '1.0'
+        }
+        mato {
+            minSdkVersion 19
+            applicationId 'sk.filo.tomas.reminder'
+            targetSdkVersion 23
+            testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+            versionCode 1
+            versionName '1.0'
+        }
+        mama {
+            minSdkVersion 19
+            applicationId 'sk.filo.tomas.reminder'
+            targetSdkVersion 22
+            testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+            versionCode 1
+            versionName '1.0'
+        }
+        otec {
+            minSdkVersion 19
+            applicationId 'sk.filo.tomas.reminder'
+            targetSdkVersion 21
+            testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+            versionCode 1
+            versionName '1.0'
+        }
     }
 }
 

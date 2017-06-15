@@ -50,9 +50,7 @@ public class TimePickerFragment extends DialogFragment
 
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
         EditText time = (EditText) getActivity().findViewById(target);
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
+        Calendar cal = DateTimeUtil.getLastMidnight();
         cal.set(Calendar.HOUR_OF_DAY, hourOfDay);
         cal.set(Calendar.MINUTE, minute);
         time.setText(timeFormat.format(cal.getTime()));

@@ -35,8 +35,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         PowerManager powerManager = (PowerManager) context.getSystemService(POWER_SERVICE);
-        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-                "AlarmReceiver");
+        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AlarmReceiver");
         wakeLock.acquire();
         try {
             DatabaseHelper dbH = new DatabaseHelper(context);
@@ -64,7 +63,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                                     .setContentTitle(context.getString(R.string.birthday))
                                     .setContentText(aei.name + " " + context.getString(R.string.has_birthday))
                                     .setAutoCancel(true)
-                                    .setPriority(NotificationCompat.PRIORITY_HIGH);
+                                    .setPriority(NotificationCompat.PRIORITY_HIGH).setCategory(Notification.CATEGORY_EVENT);
 
                             String number = getContactNumberById(context, aei.parentId);
 
@@ -103,7 +102,8 @@ public class AlarmReceiver extends BroadcastReceiver {
                                     .setContentText(aei.description)
                                     .setAutoCancel(true)
                                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                    .setContentIntent(pendingIntent);
+                                    .setContentIntent(pendingIntent).setCategory(Notification.CATEGORY_REMINDER);
+
                             if (sound) {
                                 builder.setSound(alarmSound);
                             }

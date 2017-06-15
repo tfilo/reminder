@@ -19,14 +19,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import sk.filo.tomas.reminder.util.BirthDayTime;
-import sk.filo.tomas.reminder.receiver.AlarmReceiver;
-import sk.filo.tomas.reminder.util.ContactsUtil;
 import sk.filo.tomas.reminder.item.AlarmExtendedItem;
 import sk.filo.tomas.reminder.item.AlarmItem;
 import sk.filo.tomas.reminder.item.ContactItem;
 import sk.filo.tomas.reminder.item.NoteItem;
 import sk.filo.tomas.reminder.item.ReminderItem;
+import sk.filo.tomas.reminder.receiver.AlarmReceiver;
+import sk.filo.tomas.reminder.util.BirthDayTime;
+import sk.filo.tomas.reminder.util.ContactsUtil;
 import sk.filo.tomas.reminder.util.DateTimeUtil;
 
 /**
@@ -36,7 +36,7 @@ import sk.filo.tomas.reminder.util.DateTimeUtil;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "reminder.sqlite";
-    private static final int DB_VERSION = 1 ;
+    private static final int DB_VERSION = 1;
     private static String TAG = DatabaseHelper.class.getSimpleName();
     private Context mCtx;
     private ContactsUtil contactsUtil = new ContactsUtil();
@@ -86,8 +86,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-    public AlarmItem getEnabledAlarmItem(Long alarmId) {
-        if (alarmId == null) return null;
+    public AlarmItem getEnabledAlarmItem(@NonNull Long alarmId) {
         AlarmItem ai = null;
         SQLiteDatabase rd = this.getReadableDatabase();
         Cursor alarmCursor = rd.rawQuery(
@@ -98,35 +97,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             if (alarmCursor.moveToNext()) {
                 Long id = alarmCursor.getLong(alarmCursor.getColumnIndexOrThrow("id"));
-                Integer hour = null;
-                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("hour"))) {
-                    hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
-                }
-                Integer minute = null;
-                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("minute"))) {
-                    minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
-                }
-                Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
-                Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
-                Integer year = null;
-                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("year"))) {
-                    year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
-                }
-                Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
-
-                if (hour==null && minute==null) { // when time not specified use time from settings
+                Integer hour, minute, year = null;
+                if (alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("hour")) ||
+                        alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("minute"))) {
                     BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
                     hour = birthDayNotificationTime.hours;
                     minute = birthDayNotificationTime.minutes;
-                    Log.d(TAG, "Time is updated by default to " + hour + ":" + minute);
                 } else {
-                    Log.d(TAG, "Time is " + hour + ":" + minute);
+                    hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
+                    minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
                 }
+                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("year"))) {
+                    year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
+                }
+                Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
+                Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
+                Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
                 Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
                 ai = new AlarmItem(id, alarmTime, lastExecuted);
             }
         } catch (IllegalArgumentException iae) {
-            Log.d(TAG, "Cannot read AlarmItem from database, " + iae.getMessage());
+            Log.e(TAG, "getEnabledAlarmItem ERROR: " + iae.getMessage());
         } finally {
             alarmCursor.close();
             rd.close();
@@ -134,88 +125,82 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return ai;
     }
 
-    public AlarmExtendedItem getExtendedAlarmInfo(Long alarmid) {
+    public AlarmExtendedItem getExtendedAlarmInfo(@NonNull Long alarmid) {
         SQLiteDatabase rd = this.getReadableDatabase();
         AlarmExtendedItem aei = null;
-        if (alarmid != null) {
-
-            AlarmItem alarmItem = null;
-            Cursor alarmCursor = rd.rawQuery(
-                    "SELECT id, hour, minute, day, month, year, last_executed FROM alarms " +
-                            "WHERE id = ? AND alarm_enabled = 1",
-                    new String[]{alarmid.toString()}
-            );
-            try {
-                if (alarmCursor.moveToNext()) {
-                    Long id = alarmCursor.getLong(alarmCursor.getColumnIndexOrThrow("id"));
-                    Integer hour = null;
-                    if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("hour"))) {
-                        hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
-                    }
-                    Integer minute = null;
-                    if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("minute"))) {
-                        minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
-                    }
-                    Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
-                    Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
-                    Integer year = null;
-                    if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("year"))) {
-                        year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
-                    }
-                    Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
-
-                    if (hour==null && minute==null) { // when time not specified use time from settings
-                        BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
-                        hour = birthDayNotificationTime.hours;
-                        minute = birthDayNotificationTime.minutes;
-                    }
-                    Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
-                    alarmItem = new AlarmItem(id, alarmTime, lastExecuted);
-                }
-            } catch (IllegalArgumentException iae) {
-                Log.d(TAG, "Cannot read AlarmItem from database, " + iae.getMessage());
-            } finally {
-                alarmCursor.close();
-            }
-            if (alarmItem == null) return null;
-
-            Cursor reminder = rd.rawQuery("SELECT id, name, description FROM reminders WHERE alarm_fk = ? ", new String[]{alarmid.toString()});
-            try {
-                if (reminder.moveToNext()) {
-                    Long parId = reminder.getLong(reminder.getColumnIndexOrThrow("id"));
-                    String name = reminder.getString(reminder.getColumnIndexOrThrow("name"));
-                    String description = reminder.getString(reminder.getColumnIndexOrThrow("description"));
-                    aei = new AlarmExtendedItem(alarmItem, parId, name, description, AlarmExtendedItem.Type.REMINDER);
+        AlarmItem alarmItem = null;
+        Cursor alarmCursor = rd.rawQuery(
+                "SELECT id, hour, minute, day, month, year, last_executed FROM alarms " +
+                        "WHERE id = ? AND alarm_enabled = 1",
+                new String[]{alarmid.toString()}
+        );
+        try {
+            if (alarmCursor.moveToNext()) {
+                Long id = alarmCursor.getLong(alarmCursor.getColumnIndexOrThrow("id"));
+                Integer hour, minute, year = null;
+                if (alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("hour")) ||
+                        alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("minute"))) {
+                    BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
+                    hour = birthDayNotificationTime.hours;
+                    minute = birthDayNotificationTime.minutes;
                 } else {
-                    Cursor contact = rd.rawQuery("SELECT id, name FROM contacts WHERE alarm_fk = ? ", new String[]{alarmid.toString()});
-                    try {
-                        if (contact.moveToNext()) {
-                            Long parId = contact.getLong(contact.getColumnIndexOrThrow("id"));
-                            String name = contact.getString(contact.getColumnIndexOrThrow("name"));
-                            aei = new AlarmExtendedItem(alarmItem, parId, name, null, AlarmExtendedItem.Type.CONTACT);
-                        }
-                    } finally {
-                        contact.close();
-                    }
+                    hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
+                    minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
                 }
-            } finally {
-                reminder.close();
-                rd.close();
+                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("year"))) {
+                    year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
+                }
+                Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
+                Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
+                Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
+                Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
+                alarmItem = new AlarmItem(id, alarmTime, lastExecuted);
             }
+        } catch (IllegalArgumentException iae) {
+            Log.e(TAG, "getExtendedAlarmInfo alarm ERROR: " + iae.getMessage());
+        } finally {
+            alarmCursor.close();
+        }
+        if (alarmItem == null) {
+            rd.close();
+            return null;
+        }
+
+        Cursor reminder = rd.rawQuery("SELECT id, name, description FROM reminders WHERE alarm_fk = ? ", new String[]{alarmid.toString()});
+        try {
+            if (reminder.moveToNext()) {
+                Long parentId = reminder.getLong(reminder.getColumnIndexOrThrow("id"));
+                String name = reminder.getString(reminder.getColumnIndexOrThrow("name"));
+                String description = reminder.getString(reminder.getColumnIndexOrThrow("description"));
+                aei = new AlarmExtendedItem(alarmItem, parentId, name, description, AlarmExtendedItem.Type.REMINDER);
+            } else {
+                Cursor contact = rd.rawQuery("SELECT id, name FROM contacts WHERE alarm_fk = ? ", new String[]{alarmid.toString()});
+                try {
+                    if (contact.moveToNext()) {
+                        Long parId = contact.getLong(contact.getColumnIndexOrThrow("id"));
+                        String name = contact.getString(contact.getColumnIndexOrThrow("name"));
+                        aei = new AlarmExtendedItem(alarmItem, parId, name, null, AlarmExtendedItem.Type.CONTACT);
+                    }
+                } catch (IllegalArgumentException iae) {
+                    Log.e(TAG, "getExtendedAlarmInfo contact ERROR: " + iae.getMessage());
+                } finally {
+                    contact.close();
+                }
+            }
+        } catch (IllegalArgumentException iae) {
+            Log.e(TAG, "getExtendedAlarmInfo reminder ERROR: " + iae.getMessage());
+        } finally {
+            reminder.close();
+            rd.close();
         }
         return aei;
     }
 
     public List<AlarmItem> getAlarmsToSetup() {
-        Log.d(TAG, "getAlarmsToSetup");
         List<AlarmItem> aiList = new ArrayList<AlarmItem>();
-
         SQLiteDatabase rd = this.getReadableDatabase();
-
         Calendar nextMidnight = DateTimeUtil.getNextMidnight();
-
         Calendar lastMidnight = DateTimeUtil.getLastMidnight();
-
         Calendar monthBefore = Calendar.getInstance();
         monthBefore.setTime(nextMidnight.getTime());
         monthBefore.set(Calendar.MONTH, nextMidnight.get(Calendar.MONTH) - 1);
@@ -241,27 +226,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             while (alarmCursor.moveToNext()) {
                 Long id = alarmCursor.getLong(alarmCursor.getColumnIndexOrThrow("id"));
-
-                Integer hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
-                Integer minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
-                Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
-                Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
-                Integer year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
-                Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
-
-                if (hour==null && minute==null) { // when time not specified use time from settings
+                Integer hour, minute, year = null;
+                if (alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("hour")) ||
+                        alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("minute"))) { // when time not specified use time from settings
                     BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
                     hour = birthDayNotificationTime.hours;
                     minute = birthDayNotificationTime.minutes;
+                } else {
+                    hour = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("hour"));
+                    minute = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("minute"));
                 }
+                if (!alarmCursor.isNull(alarmCursor.getColumnIndexOrThrow("year"))) {
+                    year = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("year"));
+                }
+                Integer day = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("day"));
+                Integer month = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("month"));
+                Integer lastExecuted = alarmCursor.getInt(alarmCursor.getColumnIndexOrThrow("last_executed"));
                 Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
-
                 AlarmItem ai = new AlarmItem(id, alarmTime, lastExecuted);
-                Log.d(TAG, "SETUJEM ALARM: " + ai.toString());
                 aiList.add(ai);
             }
         } catch (IllegalArgumentException iae) {
-            Log.d(TAG, "Cannot read AlarmItem from database, " + iae.getMessage());
+            Log.e(TAG, "getAlarmsToSetup ERROR " + iae.getMessage());
         } finally {
             alarmCursor.close();
             rd.close();
@@ -280,7 +266,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             wd.update("alarms", content, where, args);
             wd.setTransactionSuccessful();
         } catch (SQLException sqlE) {
-            Log.d(TAG, "Cannot update alarm in database, " + sqlE.getMessage());
+            Log.e(TAG, "enableDisableAlarm ERROR: " + sqlE.getMessage());
         } finally {
             wd.endTransaction();
             wd.close();
@@ -300,18 +286,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     oldContact.name = newContact.name;
                     oldContact.hasYear = newContact.hasYear;
                     oldContact.lastExecuted = null;
+                    Log.d(TAG, "replaceUpdateContactsByMap Updating contact: " + oldContact.toString());
                     replaceContact(oldContact);
-                    Log.d(TAG, "Updating contact: " + oldContact.toString());
                 }
                 contacts.remove(oldContact.id); // after update we dont need contact in map
             } else {
-                Log.d(TAG, "Removing contact: " + oldContact.toString());
+                Log.d(TAG, "replaceUpdateContactsByMap Removing contact: " + oldContact.toString());
                 removeRecord(oldContact.id, oldContact.alarm_fk, "contacts");
             }
         }
         for (Long key : contacts.keySet()) {
             ContactItem contactItem = contacts.get(key);
-            Log.d(TAG, "Adding new contact: " + contactItem.toString());
+            Log.d(TAG, "replaceUpdateContactsByMap Adding new contact: " + contactItem.toString());
             replaceContact(contactItem); // insert new records to DB
         }
     }
@@ -319,6 +305,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void removeAllContacts() {
         List<ContactItem> contactItems = readContacts();
         for (ContactItem contact : contactItems) {
+            Log.d(TAG, "removeAllContacts : " + contact.toString());
             removeRecord(contact.id, contact.alarm_fk, "contacts");
         }
     }
@@ -326,33 +313,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void updateContactAlarmsTime() {
         List<ContactItem> contactItems = readContacts();
         for (ContactItem contact : contactItems) {
+            Log.d(TAG, "updateContactAlarmsTime : " + contact.toString());
             addUpdateOrRemoveAlarm(contact.alarm_fk); // update every setted alarm
         }
     }
 
-    public long replaceContact(ContactItem item) {
+    public void replaceContact(@NonNull ContactItem item) {
         SQLiteDatabase wd = this.getWritableDatabase();
-        long contact_id = -1L;
         Long alarm_id = null;
 
         wd.beginTransaction();
         try {
-            BirthDayTime bDayTime = contactsUtil.getBirthDayNotificationTime(mCtx);
-
             Calendar alarmTime = Calendar.getInstance();
             alarmTime.setTime(item.alarmTime);
-
             ContentValues alarm = new ContentValues();
             if (item.alarm_fk != null) {
                 alarm.put("id", item.alarm_fk);
             }
-
             alarm.put("day", alarmTime.get(Calendar.DAY_OF_MONTH));
             alarm.put("month", alarmTime.get(Calendar.MONTH));
             alarm.putNull("hour");
             alarm.putNull("minute");
             alarm.putNull("year");
-
             if (item.alarmEnabled != null) {
                 alarm.put("alarm_enabled", item.alarmEnabled);
             }
@@ -374,32 +356,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             contact.put("alarm_fk", alarm_id);
             contact.put("has_year", item.hasYear);
             contact.put("birthday", DateTimeUtil.getDateTime(item.birthday));
-
-            contact_id = wd.replaceOrThrow("contacts", null, contact);
-
+            wd.replaceOrThrow("contacts", null, contact);
             wd.setTransactionSuccessful();
         } catch (SQLException sqlE) {
-            Log.d(TAG, "Cannot write ContactItem or Alarm to database, " + sqlE.getMessage());
+            Log.e(TAG, "replaceContact ERROR: " + sqlE.getMessage());
         } finally {
             wd.endTransaction();
             wd.close();
-            addUpdateOrRemoveAlarm(alarm_id);
+            if (alarm_id != null) {
+                addUpdateOrRemoveAlarm(alarm_id);
+            }
         }
-
-        return contact_id;
     }
 
-    public long replaceReminder(ReminderItem item) {
-        Log.d(TAG, "replaceReminder()");
+    public void replaceReminder(@NonNull ReminderItem item) {
         SQLiteDatabase wd = this.getWritableDatabase();
-        long reminder_id = -1L;
         Long alarm_id = null;
-
         wd.beginTransaction();
         try {
             Calendar notification = Calendar.getInstance();
             notification.setTime(item.notificationTime);
-
             ContentValues alarm = new ContentValues();
             if (item.alarm_fk != null) {
                 alarm.put("id", item.alarm_fk);
@@ -415,9 +391,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (item.lastExecuted != null) {
                 alarm.put("last_executed", item.lastExecuted);
             }
-
             alarm_id = wd.replaceOrThrow("alarms", null, alarm);
-
             ContentValues reminder = new ContentValues();
             if (item.id != null) {
                 reminder.put("id", item.id);
@@ -425,26 +399,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             reminder.put("name", item.name);
             reminder.put("description", item.description);
             reminder.put("alarm_fk", alarm_id);
-
-            reminder_id = wd.replaceOrThrow("reminders", null, reminder);
-
+            wd.replaceOrThrow("reminders", null, reminder);
             wd.setTransactionSuccessful();
-            Log.d(TAG, "Reminder with id " + reminder_id + " stored in database with alarm " + alarm_id);
         } catch (SQLException sqlE) {
-            Log.d(TAG, "Cannot write ReminderItem to database, " + sqlE.getMessage());
+            Log.d(TAG, "replaceReminder ERROR: " + sqlE.getMessage());
         } finally {
             wd.endTransaction();
             wd.close();
-            addUpdateOrRemoveAlarm(alarm_id);
+            if (alarm_id != null) {
+                addUpdateOrRemoveAlarm(alarm_id);
+            }
         }
-
-        return reminder_id;
     }
 
-    public long replaceNote(NoteItem item) {
+    public void replaceNote(@NonNull NoteItem item) {
         SQLiteDatabase wd = this.getWritableDatabase();
-        long note_id = -1L;
-
         wd.beginTransaction();
         try {
             ContentValues note = new ContentValues();
@@ -453,16 +422,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
             note.put("name", item.name);
             note.put("description", item.description);
-            note_id = wd.replaceOrThrow("notes", null, note);
+            wd.replaceOrThrow("notes", null, note);
             wd.setTransactionSuccessful();
         } catch (SQLException sqlE) {
-            Log.d(TAG, "Cannot write NoteItem to database, " + sqlE.getMessage());
+            Log.d(TAG, "replaceNote ERROR: " + sqlE.getMessage());
         } finally {
             wd.endTransaction();
             wd.close();
         }
-
-        return note_id;
     }
 
     public List<ReminderItem> readReminders() {
@@ -484,13 +451,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Integer lastExecuted = cursor.getInt(cursor.getColumnIndexOrThrow("last_executed"));
                 Long alarmFk = cursor.getLong(cursor.getColumnIndexOrThrow("alarm_fk"));
                 Boolean alarmEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_enabled")) == 0 ? false : true;
-
                 Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
-
                 reminders.add(new ReminderItem(id, alarmFk, name, description, alarmTime, alarmEnabled, lastExecuted));
             }
         } catch (IllegalArgumentException iae) {
-            Log.d(TAG, "Cannot read ReminderItems from database, " + iae.getMessage());
+            Log.e(TAG, "readReminders ERROR: " + iae.getMessage());
         } finally {
             cursor.close();
             rd.close();
@@ -499,7 +464,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return reminders;
     }
 
-    public ReminderItem readReminder(Long recId) {
+    public ReminderItem readReminder(@NonNull Long recId) {
         SQLiteDatabase rd = this.getReadableDatabase();
         Cursor cursor = rd.rawQuery(
                 "SELECT reminders.id AS id, name, description, hour, minute, day, month, year, alarm_enabled, alarm_fk, last_executed FROM reminders " +
@@ -507,7 +472,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "WHERE reminders.id=? ",
                 new String[]{recId.toString()}
         );
-
         ReminderItem reminder = null;
         try {
             if (cursor.moveToNext()) {
@@ -522,17 +486,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Integer lastExecuted = cursor.getInt(cursor.getColumnIndexOrThrow("last_executed"));
                 Long alarmFk = cursor.getLong(cursor.getColumnIndexOrThrow("alarm_fk"));
                 Boolean alarmEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_enabled")) == 0 ? false : true;
-
                 Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, year);
                 reminder = new ReminderItem(id, alarmFk, name, description, alarmTime, alarmEnabled, lastExecuted);
             }
         } catch (IllegalArgumentException iae) {
-            Log.d(TAG, "Cannot read ReminderItem from database, " + iae.getMessage());
+            Log.e(TAG, "readReminder ERROR: " + iae.getMessage());
         } finally {
             cursor.close();
             rd.close();
         }
-
         return reminder;
     }
 
@@ -546,26 +508,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Long id = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
                 String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
                 String description = cursor.getString(cursor.getColumnIndexOrThrow("description"));
-
                 notes.add(new NoteItem(id, name, description));
             }
         } catch (IllegalArgumentException iae) {
-            Log.d(TAG, "Cannot read NoteItems from database, " + iae.getMessage());
+            Log.e(TAG, "readNotes " + iae.getMessage());
         } finally {
             cursor.close();
             rd.close();
         }
-
         return notes;
     }
 
-    public NoteItem readNote(Long recId) {
+    public NoteItem readNote(@NonNull Long recId) {
         SQLiteDatabase rd = this.getReadableDatabase();
         Cursor cursor = rd.rawQuery(
                 "SELECT id, name, description FROM notes WHERE id=? ",
                 new String[]{recId.toString()}
         );
-
         NoteItem note = null;
         try {
             if (cursor.moveToNext()) {
@@ -575,12 +534,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 note = new NoteItem(id, name, description);
             }
         } catch (IllegalArgumentException iae) {
-            Log.d(TAG, "Cannot read NoteItem from database, " + iae.getMessage());
+            Log.e(TAG, "readNote ERROR: " + iae.getMessage());
         } finally {
             cursor.close();
             rd.close();
         }
-
         return note;
     }
 
@@ -602,21 +560,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 Long alarmFk = cursor.getLong(cursor.getColumnIndexOrThrow("alarm_fk"));
                 Boolean alarmEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("alarm_enabled")) == 0 ? false : true;
                 Boolean hasYear = cursor.getInt(cursor.getColumnIndexOrThrow("has_year")) == 0 ? false : true;
-
                 BirthDayTime birthDayNotificationTime = contactsUtil.getBirthDayNotificationTime(mCtx);
                 Integer hour = birthDayNotificationTime.hours;
                 Integer minute = birthDayNotificationTime.minutes;
-
                 Date alarmTime = DateTimeUtil.getDateFromSeparateFields(hour, minute, day, month, null);
                 contacts.add(new ContactItem(id, alarmFk, name, img_url, DateTimeUtil.getDateTime(birthday), alarmTime, alarmEnabled, lastExecuted, hasYear));
             }
         } catch (IllegalArgumentException iae) {
-            Log.d(TAG, "Cannot read ContactItem from database, " + iae.getMessage());
+            Log.d(TAG, "readContacts ERROR: " + iae.getMessage());
         } finally {
             cursor.close();
             rd.close();
         }
-
         return contacts;
     }
 
@@ -632,20 +587,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } finally {
             wd.endTransaction();
             wd.close();
-            if (!table.equals("notes")) {
+            if (!table.equals("notes") && alarmId != null) {
                 addUpdateOrRemoveAlarm(alarmId);
             }
         }
     }
 
-    public void addUpdateOrRemoveAlarm(Long id) {
+    public void addUpdateOrRemoveAlarm(@NonNull Long id) {
         AlarmItem ai = getEnabledAlarmItem(id);
-
         AlarmManager am = (AlarmManager) mCtx.getSystemService(mCtx.ALARM_SERVICE);
         Intent i = new Intent(mCtx, AlarmReceiver.class);
         i.putExtra("alarmId", id);
         i.setAction(id.toString());
-
         if (ai == null) {
             // Alarm under id is disabled or deleted
             PendingIntent broadcast = PendingIntent.getBroadcast(mCtx, id.intValue(), i, PendingIntent.FLAG_NO_CREATE);
@@ -657,7 +610,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             Calendar nextMidnight = DateTimeUtil.getNextMidnight();
             if (ai.alarmTime.after(new Date()) && ai.alarmTime.before(nextMidnight.getTime())) { // set alarms from now to midnight
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(mCtx, id.intValue(), i, PendingIntent.FLAG_UPDATE_CURRENT);
-                if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT){
+                if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.KITKAT) {
                     am.set(AlarmManager.RTC_WAKEUP, ai.alarmTime.getTime(), pendingIntent);
                 } else {
                     if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
@@ -668,11 +621,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 }
                 Log.d(TAG, "Alarm with id " + id + " updated");
             }
-            Log.d(TAG, "Alarm with id " + id + " NOT UPDATED: " + ai.toString());
+            Log.d(TAG, "Alarm with id " + id + " not updated");
         }
     }
 
-    public void updateLastExecuted(Long id, Date alarmTime) {
+    public void updateLastExecuted(@NonNull Long id, @NonNull Date alarmTime) {
         SQLiteDatabase wd = this.getWritableDatabase();
         wd.beginTransaction();
         try {
@@ -685,7 +638,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             wd.update("alarms", content, where, args);
             wd.setTransactionSuccessful();
         } catch (SQLException sqlE) {
-            Log.d(TAG, "Cannot update alarm in database, " + sqlE.getMessage());
+            Log.e(TAG, "updateLastExecuted ERROR: " + sqlE.getMessage());
         } finally {
             wd.endTransaction();
             wd.close();

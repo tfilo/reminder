@@ -59,7 +59,6 @@ public class DateTimeUtil {
                 date = sdf.parse(time);
                 break;
             } catch (ParseException e) {
-                e.printStackTrace();
             }
         }
         return date;

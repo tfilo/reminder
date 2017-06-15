@@ -10,6 +10,7 @@ import android.widget.EditText;
 import java.util.Calendar;
 
 import sk.filo.tomas.reminder.R;
+import sk.filo.tomas.reminder.util.DateTimeUtil;
 
 /**
  * Created by tomas on 19.10.2016.
@@ -30,11 +31,7 @@ public class DatePickerFragment extends DialogFragment
 
     public void onDateSet(DatePicker view, int year, int month, int day) {
         EditText time = (EditText) getActivity().findViewById(R.id.new_date);
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
+        Calendar cal = DateTimeUtil.getLastMidnight();
         cal.set(Calendar.YEAR, year);
         cal.set(Calendar.MONTH, month);
         cal.set(Calendar.DAY_OF_MONTH, day);

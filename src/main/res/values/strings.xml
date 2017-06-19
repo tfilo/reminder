@@ -18,6 +18,8 @@
     <string name="ringtone_picker">Select tone</string>
     <string name="save">Save settings</string>
     <string name="birthday_alerts">Enable Birthday alerts</string>
+    <string name="vibrate_on_alerts">Enable vibration</string>
+    <string name="light_on_alerts">Enable notification light</string>
     <string name="invalid_ringtone">Invalid ringtone</string>
     <string name="notification_sound">Notification sound</string>
     <string name="call">Call</string>

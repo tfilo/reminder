@@ -24,4 +24,6 @@
     <string name="call">Volať</string>
     <string name="message">Poslať SMS</string>
     <string name="happy_birthday">Prajem všetko najlepšie k narodeninám!</string>
+    <string name="light_on_alerts">Povoliť notifikačnú LED</string>
+    <string name="vibrate_on_alerts">Povoliť vibrovanie</string>
 </resources>

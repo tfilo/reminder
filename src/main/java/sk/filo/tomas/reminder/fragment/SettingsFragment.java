@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -36,6 +37,8 @@ public class SettingsFragment extends Fragment {
 
     private Switch mSounds;
     private Switch mBdayAlerts;
+    private Switch mVibrateAlerts;
+    private Switch mLightAlerts;
     private EditText mBdayNotificationTime;
     private Button mChooseNotification;
 
@@ -51,13 +54,26 @@ public class SettingsFragment extends Fragment {
 
         mBdayAlerts = (Switch) w.findViewById(R.id.use_contacts);
         mSounds = (Switch) w.findViewById(R.id.use_sound);
+        mVibrateAlerts = (Switch) w.findViewById(R.id.use_vibrate);
+        mLightAlerts = (Switch) w.findViewById(R.id.use_light);
         mBdayNotificationTime = (EditText) w.findViewById(R.id.defaultContactAlert);
         mChooseNotification = (Button) w.findViewById(R.id.ringtone_picker);
 
         final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getContext());
 
         mBdayAlerts.setChecked(sharedPreferences.getBoolean(MainActivity.USE_CONTACTS, true));
+        mLightAlerts.setChecked(sharedPreferences.getBoolean(MainActivity.USE_LIGHT, true));
         mSounds.setChecked(sharedPreferences.getBoolean(MainActivity.USE_SOUND, true));
+
+        Vibrator vibrator = (Vibrator)getContext().getSystemService(getContext().VIBRATOR_SERVICE);
+        if (!vibrator.hasVibrator()) {
+            mVibrateAlerts.setEnabled(false);
+            mVibrateAlerts.setChecked(false);
+        } else {
+            mVibrateAlerts.setChecked(sharedPreferences.getBoolean(MainActivity.USE_VIBRATE, true));
+        }
+
+
         mBdayNotificationTime.setText(sharedPreferences.getString(ContactsUtil.CONTACT_ALARM_TIME,"10:00"));
 
         if (!mSounds.isChecked()) {
@@ -107,6 +123,28 @@ public class SettingsFragment extends Fragment {
                 } else {
                     sharedPreferences.edit().putBoolean(MainActivity.USE_SOUND, false).commit();
                     mChooseNotification.setEnabled(false);
+                }
+            }
+        });
+
+        mVibrateAlerts.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mVibrateAlerts.isChecked()) {
+                    sharedPreferences.edit().putBoolean(MainActivity.USE_VIBRATE, true).commit();
+                } else {
+                    sharedPreferences.edit().putBoolean(MainActivity.USE_VIBRATE, false).commit();
+                }
+            }
+        });
+
+        mLightAlerts.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mLightAlerts.isChecked()) {
+                    sharedPreferences.edit().putBoolean(MainActivity.USE_LIGHT, true).commit();
+                } else {
+                    sharedPreferences.edit().putBoolean(MainActivity.USE_LIGHT, false).commit();
                 }
             }
         });

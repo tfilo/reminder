@@ -40,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     public final static int REQUEST_READ_CONTACTS_FROM_SETTINGS = 2;
     public final static String USE_CONTACTS = "use_contacts";
     public final static String USE_SOUND = "use_sound";
+    public final static String USE_VIBRATE = "use_vibrate";
+    public final static String USE_LIGHT = "use_light";
     public final static String LAST_YEAR = "LAST_YEAR";
     public final static String RING_TONE = "RING_TONE";
 

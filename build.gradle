@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
+    compileSdkVersion 25
     buildToolsVersion '25.0.0'
     defaultConfig {
         applicationId 'sk.filo.tomas.reminder'
@@ -19,7 +19,7 @@ android {
     }
     productFlavors {
         nexus7 {
-            minSdkVersion 19
+            minSdkVersion 25
             applicationId 'sk.filo.tomas.reminder'
             targetSdkVersion 25
             testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
@@ -27,7 +27,7 @@ android {
             versionName '1.0'
         }
         mato {
-            minSdkVersion 19
+            minSdkVersion 23
             applicationId 'sk.filo.tomas.reminder'
             targetSdkVersion 23
             testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
@@ -35,7 +35,7 @@ android {
             versionName '1.0'
         }
         mama {
-            minSdkVersion 19
+            minSdkVersion 22
             applicationId 'sk.filo.tomas.reminder'
             targetSdkVersion 22
             testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
@@ -43,9 +43,17 @@ android {
             versionName '1.0'
         }
         otec {
-            minSdkVersion 19
+            minSdkVersion 21
             applicationId 'sk.filo.tomas.reminder'
             targetSdkVersion 21
+            testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+            versionCode 1
+            versionName '1.0'
+        }
+        petkinOtec {
+            minSdkVersion 19
+            applicationId 'sk.filo.tomas.reminder'
+            targetSdkVersion 19
             testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
             versionCode 1
             versionName '1.0'
@@ -58,7 +66,7 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:24.0.0'
-    compile 'com.android.support:design:24.0.0'
+    compile 'com.android.support:appcompat-v7:25.0.0'
+    compile 'com.android.support:design:25.0.0'
     testCompile 'junit:junit:4.12'
 }

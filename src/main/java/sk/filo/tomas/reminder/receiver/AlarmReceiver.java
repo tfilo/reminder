@@ -8,12 +8,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Color;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.PowerManager;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import java.util.Date;
@@ -55,20 +59,30 @@ public class AlarmReceiver extends BroadcastReceiver {
                     final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
                     Uri alarmSound = Uri.parse(sharedPreferences.getString(MainActivity.RING_TONE, ""));
                     Boolean sound = sharedPreferences.getBoolean(MainActivity.USE_SOUND, true);
+                    Boolean vibrate = sharedPreferences.getBoolean(MainActivity.USE_VIBRATE, true);
+                    Boolean light = sharedPreferences.getBoolean(MainActivity.USE_LIGHT, true);
+
+                    builder.setWhen(System.currentTimeMillis())
+                            .setAutoCancel(true)
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setCategory(Notification.CATEGORY_REMINDER);
+
                     switch (aei.type) {
                         case CONTACT:
                             builder.setSmallIcon(R.drawable.ic_redeem_white_24dp)
                                     .setTicker(context.getString(R.string.birthday))
-                                    .setWhen(System.currentTimeMillis())
                                     .setContentTitle(context.getString(R.string.birthday))
-                                    .setContentText(aei.name + " " + context.getString(R.string.has_birthday))
-                                    .setAutoCancel(true)
-                                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                    .setCategory(Notification.CATEGORY_EVENT);
+                                    .setContentText(aei.name + " " + context.getString(R.string.has_birthday));
 
                             String number = getContactNumberById(context, aei.parentId);
 
-                            if (number!=null && !number.isEmpty()) {
+                            TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
+                            Boolean isPhone = true;
+                            if(manager.getPhoneType() == TelephonyManager.PHONE_TYPE_NONE){
+                                isPhone = false;
+                            }
+
+                            if (number!=null && !number.isEmpty() && isPhone) {
                                 Intent dial = new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", number, null));
                                 PendingIntent pendingDial = PendingIntent.getActivity(context, aei.id.intValue(),
                                         dial, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -83,10 +97,6 @@ public class AlarmReceiver extends BroadcastReceiver {
                                 builder.addAction(R.drawable.ic_phone_white_18dp, context.getResources().getString(R.string.call), pendingDial)
                                        .addAction(R.drawable.ic_message_white_18dp, context.getResources().getString(R.string.message), sendSms);
                             }
-
-                            if (sound) {
-                                builder.setSound(alarmSound);
-                            }
                             break;
                         case REMINDER:
                             Intent notificationIntent = new Intent(context, MainActivity.class);
@@ -98,20 +108,26 @@ public class AlarmReceiver extends BroadcastReceiver {
 
                             builder.setSmallIcon(R.drawable.ic_alarm_white_24dp)
                                     .setTicker(context.getString(R.string.reminder))
-                                    .setWhen(System.currentTimeMillis())
                                     .setContentTitle(aei.name)
                                     .setContentText(aei.description)
-                                    .setAutoCancel(true)
-                                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                    .setContentIntent(pendingIntent)
-                                    .setCategory(Notification.CATEGORY_REMINDER);
-
-                            if (sound) {
-                                builder.setSound(alarmSound);
-                            }
+                                    .setContentIntent(pendingIntent);
                             dbH.enableDisableAlarm(id, false);
                             break;
                     }
+
+                    if (sound) {
+                        builder.setSound(alarmSound, AudioManager.STREAM_ALARM);
+                    }
+
+                    Vibrator vibrator = (Vibrator)context.getSystemService(context.VIBRATOR_SERVICE);
+                    if (vibrate && vibrator.hasVibrator()) {
+                        builder.setVibrate(new long[] { 500, 500, 500, 500, 500 });
+                    }
+
+                    if (light) {
+                        builder.setLights(Color.RED, 2000, 4000);
+                    }
+
                     Notification notif = builder.build();
                     notif.flags |= Notification.FLAG_INSISTENT | Notification.FLAG_AUTO_CANCEL;
                     mNotificationManager.notify(aei.id.intValue(), notif);
